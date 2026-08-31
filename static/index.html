@@ -1,0 +1,174 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agentenzentrale</title>
+<style>
+:root{--bg:#0e1116;--panel:#161b23;--line:#252c37;--ink:#e8ecf2;--mut:#8b93a3;
+ --moss:#63d297;--amber:#f5a524;--violet:#a78bfa;--blue:#5aa9e6;--red:#f26d6d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{position:sticky;top:0;z-index:5;background:rgba(14,17,22,.94);
+ backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:14px 18px}
+h1{margin:0;font-size:18px;letter-spacing:.2px}
+.sub{color:var(--mut);font-size:13px;margin-top:3px}
+main{padding:16px 14px 70px;max-width:1080px;margin:0 auto}
+.dept{margin:22px 0 10px;font-size:12px;letter-spacing:1.4px;text-transform:uppercase;
+ color:var(--mut);border-bottom:1px solid var(--line);padding-bottom:6px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:11px;
+ padding:12px 14px;margin-bottom:9px}
+.card.child{margin-left:18px;border-left:3px solid var(--line)}
+.row{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.name{font-weight:650;font-size:15px}
+.role{color:var(--mut);font-size:13px}
+.desc{color:#aab2c0;font-size:13px;margin-top:6px}
+.meta{color:var(--mut);font-size:12px;margin-top:7px;display:flex;gap:14px;flex-wrap:wrap}
+.badge{font-size:11px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:20px;
+ border:1px solid currentColor;white-space:nowrap}
+.b-live{color:var(--moss)} .b-cron{color:var(--amber)} .b-loop{color:var(--violet)}
+.b-sub{color:var(--blue)} .b-inf{color:var(--mut)}
+.acts{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+button{font:inherit;font-size:13px;padding:6px 13px;border-radius:8px;cursor:pointer;
+ background:#1e2530;color:var(--ink);border:1px solid var(--line)}
+button:hover{background:#26303d}
+button.danger{color:var(--red);border-color:#4a2626}
+input[type=text]{flex:1;min-width:150px;font:inherit;font-size:13px;padding:6px 10px;
+ border-radius:8px;background:#10151c;color:var(--ink);border:1px solid var(--line)}
+.empty{color:var(--mut);font-size:13px;padding:8px 0}
+#gate{padding:40px 18px;max-width:420px;margin:0 auto}
+#gate input{width:100%;margin:10px 0}
+.err{color:var(--red);font-size:13px;margin-top:8px}
+@media(max-width:520px){.card.child{margin-left:10px}.meta{gap:10px}}
+</style></head><body>
+<div id="gate" hidden>
+  <h1>Agentenzentrale</h1>
+  <p class="sub">Zugangswort eingeben. Es wird nur in diesem Browser gespeichert.</p>
+  <input type="password" id="tok" placeholder="Token" autocomplete="current-password">
+  <button onclick="saveTok()">Öffnen</button>
+  <div class="err" id="gerr"></div>
+</div>
+<div id="app" hidden>
+<header>
+  <h1>Agentenzentrale</h1>
+  <div class="sub" id="stamp">lädt …</div>
+</header>
+<main id="out"></main>
+</div>
+<script>
+const DEPT_ORDER = ["Leitung","Produktion","Vertrieb","Forschung","Sicherheit","Betrieb","Sonstiges"];
+let TOKEN = localStorage.getItem("orgtok") || "";
+
+function saveTok(){
+  TOKEN = document.getElementById("tok").value.trim();
+  localStorage.setItem("orgtok", TOKEN); boot();
+}
+function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function dur(s){
+  if(s==null) return "?";
+  const d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60);
+  return d?`${d} d ${h} h`: h?`${h} h ${m} min`: `${m} min`;
+}
+function num(n){return (n||0).toLocaleString("de-DE")}
+
+async function api(path, opts){
+  const r = await fetch(path, Object.assign({headers:{"X-Org-Token":TOKEN,
+    "Content-Type":"application/json"}}, opts||{}));
+  if(r.status===401) throw new Error("401");
+  return r.json();
+}
+
+function badges(item){
+  const b=[];
+  if(item.kind==="session") b.push(`<span class="badge b-live">LÄUFT</span>`);
+  if(item.trigger && item.trigger.startsWith("cron")) b.push(`<span class="badge b-cron">CRON · ${esc(item.human||"")}</span>`);
+  if(item.spawns) b.push(`<span class="badge b-sub">STARTET SUBAGENTEN · ${esc(item.spawns)}</span>`);
+  if(item.role==="Fernsteuerungs-Zentrale"||item.role==="Fernsteuerung codex")
+    b.push(`<span class="badge b-inf">INFRASTRUKTUR</span>`);
+  return b.join(" ");
+}
+
+function card(item, child){
+  const acts=[];
+  if(item.can_prompt) acts.push(
+    `<input type="text" id="p_${esc(item.id)}" placeholder="Nachricht an diese Sitzung …">
+     <button onclick="sendPrompt('${esc(item.id)}')">Senden</button>`);
+  if(item.can_kill) acts.push(
+    `<button class="danger" onclick="kill('${esc(item.id)}','${esc(item.name||item.id)}')">Beenden</button>`);
+  const meta=[];
+  if(item.runtime_s!=null) meta.push(`läuft seit ${dur(item.runtime_s)}`);
+  if(item.rss_mb) meta.push(`${item.rss_mb} MB`);
+  if(item.socket) meta.push(`Socket ${esc(item.socket)}`);
+  if(item.schedule) meta.push(`<code>${esc(item.schedule)}</code>`);
+  if(item.tokens) meta.push(`${num(item.tokens.input)} ein / ${num(item.tokens.output)} aus`);
+  return `<div class="card${child?" child":""}">
+    <div class="row"><span class="name">${esc(item.name||item.id)}</span>
+      <span class="role">${esc(item.role||"")}</span> ${badges(item)}</div>
+    ${item.desc?`<div class="desc">${esc(item.desc)}</div>`:""}
+    ${meta.length?`<div class="meta">${meta.join("<span>·</span>")}</div>`:""}
+    ${acts.length?`<div class="acts">${acts.join("")}</div>`:""}
+  </div>`;
+}
+
+async function boot(){
+  let d;
+  try{ d = await api("/api/org"); }
+  catch(e){
+    document.getElementById("app").hidden=true;
+    document.getElementById("gate").hidden=false;
+    if(TOKEN) document.getElementById("gerr").textContent="Token abgelehnt.";
+    return;
+  }
+  document.getElementById("gate").hidden=true;
+  document.getElementById("app").hidden=false;
+  render(d);
+}
+
+function render(d){
+  const items = [];
+  for(const s of d.sessions||[]) items.push(Object.assign({}, s));
+  for(const c of d.cron||[]) items.push(Object.assign({}, c));
+  for(const h of d.hermes||[]) items.push(Object.assign({}, h));
+
+  // Subagenten-Hinweise: welche Sitzung startet was?
+  for(const it of items){
+    if(/growth|goal-daily|hermes|Quant-Research/i.test(it.name+it.role))
+      it.spawns = /Quant-Research|tao/i.test(it.name+it.role) ? "viele (6 parallel)" : "wenige, per opencode/codex";
+  }
+  // Token den Sitzungen grob zuordnen
+  const toks = Object.values(d.tokens||{}).sort((a,b)=>b.mtime-a.mtime);
+  if(toks.length && items.length){
+    const rc = items.find(i=>/claude-rc/.test(i.name));
+    if(rc) rc.tokens = toks[0];
+  }
+
+  const byDept={};
+  for(const it of items) (byDept[it.dept||"Sonstiges"] ||= []).push(it);
+
+  let html="";
+  for(const dept of DEPT_ORDER){
+    const list=byDept[dept]; if(!list||!list.length) continue;
+    html += `<div class="dept">${esc(dept)} · ${list.length}</div>`;
+    const live=list.filter(i=>i.kind==="session");
+    const rest=list.filter(i=>i.kind!=="session");
+    for(const i of live) html+=card(i,false);
+    for(const i of rest) html+=card(i,true);
+  }
+  const procs=(d.processes||[]).length;
+  document.getElementById("out").innerHTML = html || `<div class="empty">Nichts gefunden.</div>`;
+  document.getElementById("stamp").textContent =
+    `${items.length} Einträge · ${procs} Prozesse · Stand ${new Date(d.generated_at*1000).toLocaleTimeString("de-DE")}`;
+}
+
+async function kill(id,name){
+  if(!confirm(`"${name}" wirklich beenden?\n\nDer Verlauf wird vorher gesichert.`)) return;
+  const r=await api("/api/kill",{method:"POST",body:JSON.stringify({id})});
+  alert(r.ok?`Beendet.${r.archived_lines?` ${r.archived_lines} Zeilen gesichert.`:""}`:`Fehlgeschlagen: ${r.error||"?"}`);
+  boot();
+}
+async function sendPrompt(id){
+  const el=document.getElementById("p_"+id); const text=el.value.trim();
+  if(!text) return;
+  const r=await api("/api/prompt",{method:"POST",body:JSON.stringify({id,text})});
+  if(r.ok){ el.value=""; alert("Gesendet."); } else alert("Fehlgeschlagen: "+(r.error||"?"));
+}
+boot(); setInterval(()=>{ if(!document.getElementById("app").hidden) boot(); }, 30000);
+</script></body></html>
