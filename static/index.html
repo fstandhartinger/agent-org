@@ -41,7 +41,7 @@ button{font:inherit;font-size:13px;padding:6px 12px;border-radius:8px;cursor:poi
  background:#1e2530;color:var(--ink);border:1px solid var(--line)}
 button:hover{background:#26303d}
 button.danger{color:var(--red);border-color:#4a2626}
-input[type=text],input[type=password]{flex:1;min-width:140px;font:inherit;font-size:13px;padding:6px 10px;
+input[type=text],input[type=password],input.masked{flex:1;min-width:140px;font:inherit;font-size:13px;padding:6px 10px;
  border-radius:8px;background:#10151c;color:var(--ink);border:1px solid var(--line)}
 /* ── org chart: departments are COLUMNS, units stack DOWNWARDS ──
    Die alte Form legte alle ~22 Einheiten einer Ebene nebeneinander → gut
@@ -99,13 +99,23 @@ input[type=text],input[type=password]{flex:1;min-width:140px;font:inherit;font-s
 #term .ti{display:flex;gap:7px;padding:9px 11px;border-top:1px solid var(--line)}
 #gate{padding:44px 18px;max-width:400px;margin:0 auto}
 #gate input{width:100%;margin:10px 0}
+#tok.masked{-webkit-text-security:disc;text-security:disc;letter-spacing:.12em}
 .err{color:var(--red);font-size:13px;margin-top:8px}
 .empty{color:var(--mut);font-size:13px;padding:10px 0}
 </style></head><body>
 <div id="gate" hidden>
   <h1>Agent Org</h1>
   <p style="color:#8b93a3;font-size:13px">Enter the access token. Stored in this browser only.</p>
-  <input type="password" id="tok" placeholder="Token" autocomplete="current-password">
+  <!-- Deliberately NOT type=password. Every Sandy PaaS app lives under
+       mintapis.com, so Chrome's password manager treats a login saved for one
+       app as a match for all the others and offers it in this gate. There is no
+       account here, only a shared token, so the field stays out of the password
+       manager: a text input masked via -webkit-text-security, with a fallback to
+       type=password where a browser cannot mask it. -->
+  <input type="text" id="tok" class="masked" placeholder="Token" aria-label="Access token"
+         name="agentorg-access-token" autocomplete="off" autocapitalize="off"
+         autocorrect="off" spellcheck="false" data-form-type="other"
+         data-1p-ignore data-lpignore="true" data-bwignore>
   <button onclick="saveTok()">Open</button>
   <div class="err" id="gerr"></div>
 </div>
@@ -150,6 +160,10 @@ const num=n=>(n||0).toLocaleString("en-US");
 function dur(s){if(s==null)return"?";const d=~~(s/86400),h=~~(s%86400/3600),m=~~(s%3600/60);
   return d?`${d}d ${h}h`:h?`${h}h ${m}m`:`${m}m`}
 
+(function(){var t=document.getElementById("tok");
+  if(!(window.CSS&&CSS.supports&&(CSS.supports("-webkit-text-security","disc")||CSS.supports("text-security","disc")))){
+    t.type="password";t.classList.remove("masked");}
+  t.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();saveTok();}});})();
 function saveTok(){TOKEN=document.getElementById("tok").value.trim();
   localStorage.setItem("orgtok",TOKEN);connect()}
 function setView(v){VIEW=v;localStorage.setItem("orgview",v);
