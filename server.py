@@ -51,6 +51,28 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, json.dumps({"ok": True, "ts": int(time.time())}))
         if path in ("/", "/index.html"):
             return self._send(200, (STATIC / "index.html").read_bytes(), "text/html; charset=utf-8")
+        if path == "/api/stream":
+            # Server-Sent Events: der Browser haelt eine Verbindung offen und
+            # bekommt den frisch gemessenen Zustand geschickt, statt zu pollen.
+            if not authorised(self):
+                return self._send(401, json.dumps({"error": "token required"}))
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "keep-alive")
+            self.send_header("X-Accel-Buffering", "no")   # nginx darf nicht puffern
+            self.end_headers()
+            try:
+                while True:
+                    payload = json.dumps(C.collect(), ensure_ascii=False)
+                    self.wfile.write(b"data: " + payload.encode() + b"\n\n")
+                    self.wfile.flush()
+                    time.sleep(float(os.environ.get("STREAM_INTERVAL", "5")))
+            except (BrokenPipeError, ConnectionResetError):
+                return
+            except Exception:
+                return
+
         if path == "/api/org":
             if not authorised(self):
                 return self._send(401, json.dumps({"error": "token required"}))

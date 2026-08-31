@@ -27,40 +27,40 @@ def sh(cmd, timeout=25):
 # ─────────────────────────── Rollenmodell ───────────────────────────
 # (Muster, Abteilung, Rolle, Beschreibung). Erster Treffer gewinnt.
 ROLES = [
-    (r"claude-rc",                  "Leitung",      "Fernsteuerungs-Zentrale",
-     "Florians Kanal vom Handy oder Browser auf den Server. Infrastruktur, keine Aufgabe."),
-    (r"codex-rc",                   "Leitung",      "Fernsteuerung codex",
-     "Dasselbe fuer codex-Sitzungen."),
-    (r"hermes",                     "Leitung",      "Stellv. Product Owner",
-     "Beaufsichtigt die Coding-Sessions, prueft Gmail, n8n, Make und Zapier im Auftrag."),
-    (r"taoRecovery|tao-strategy",   "Forschung",    "Quant-Research",
-     "Sucht eine belastbare TAO-Tradingstrategie und laesst sie adversarial pruefen."),
-    (r"run-growth",                 "Produktion",   "Produktzyklus",
-     "Bringt die Produkte voran: Gesundheit, Postfach, Review-Pipelines, Sichtbarkeit."),
-    (r"goal-daily|goal-check",      "Produktion",   "Zielabgleich",
-     "Prueft GOAL.md gegen die Wirklichkeit."),
+    (r"claude-rc",                  "Leadership",      "Remote-control hub",
+     "Florian's channel from phone or browser to the server. Infrastructure, not a task."),
+    (r"codex-rc",                   "Leadership",      "Remote-control (codex)",
+     "The same, for codex sessions."),
+    (r"hermes",                     "Leadership",      "Deputy product owner",
+     "Supervises the coding sessions; checks Gmail, n8n, Make and Zapier on Florian's behalf."),
+    (r"taoRecovery|tao-strategy",   "Research",    "Quant research",
+     "Searches for a defensible TAO trading strategy and has it adversarially reviewed."),
+    (r"run-growth",                 "Production",   "Product cycle",
+     "Moves the products forward: health, inbox, review pipelines, discoverability."),
+    (r"goal-daily|goal-check",      "Production",   "Goal audit",
+     "Checks GOAL.md against reality."),
     (r"n8n-template-watch|n8n-review-watch|n8n-docmint|n8n-template-views",
-                                    "Vertrieb",     "Marktplatz-Waechter",
-     "Meldet Bewegung bei n8n-Einreichungen. Meldet nur Aenderungen, nie Standmeldungen."),
-    (r"make-review-watch",          "Vertrieb",     "Marktplatz-Waechter",
-     "Beobachtet die Make.com-App-Review."),
-    (r"quota-warning",              "Vertrieb",     "Kundenkontingent",
-     "Warnt, wenn ein zahlendes Konto 80 Prozent seines Kontingents erreicht."),
-    (r"sent-watchdog",              "Sicherheit",   "Postausgangs-Kontrolle",
-     "Schlaegt Alarm, wenn Mail an Fremde rausgeht. Reissleine aus dem Vorfall vom 28.08."),
+                                    "Distribution",     "Marketplace watcher",
+     "Reports movement on n8n submissions. Only changes, never status pings."),
+    (r"make-review-watch",          "Distribution",     "Marketplace watcher",
+     "Watches the Make.com app review."),
+    (r"quota-warning",              "Distribution",     "Customer quota",
+     "Warns when a paying account reaches 80% of its quota."),
+    (r"sent-watchdog",              "Security",   "Outbound mail guard",
+     "Raises the alarm when mail goes to outsiders. The tripwire from the 28 Aug incident."),
     (r"session-reaper|stale-session|reap-orphans",
-                                    "Betrieb",      "Sitzungshygiene",
-     "Beendet abgelaufene und festgefahrene Sitzungen."),
-    (r"session-restart",            "Betrieb",      "Wiederanlauf",
-     "Startet Sitzungen neu, die am Limit gescheitert sind."),
-    (r"gmail-inbox-watch",          "Vertrieb",     "Posteingang",
-     "Prueft das Postfach auf Aufgaben und erledigt sie."),
-    (r"ready-to-earn",              "Produktion",   "Verkaufsbereitschaft",
-     "Prueft, ob die Produkte wirklich verkaufsfaehig sind."),
-    (r"make-core-abo",              "Betrieb",      "Kostenkontrolle",
-     "Prueft, wann das Make-Abo kuendbar ist."),
-    (r"[Ss]ecurity",                "Sicherheit",   "Sicherheitsaudit",
-     "Woechentliche Pruefung, nur lesend."),
+                                    "Operations",      "Session hygiene",
+     "Ends expired and stuck sessions."),
+    (r"session-restart",            "Operations",      "Restart handler",
+     "Restarts sessions that failed on the rate limit."),
+    (r"gmail-inbox-watch",          "Distribution",     "Inbox watcher",
+     "Checks the inbox for tasks and handles them."),
+    (r"ready-to-earn",              "Production",   "Sales readiness",
+     "Checks whether the products are genuinely ready to sell."),
+    (r"make-core-abo",              "Operations",      "Cost control",
+     "Checks when the Make subscription can be cancelled."),
+    (r"[Ss]ecurity",                "Security",   "Security audit",
+     "Weekly review, read-only."),
 ]
 
 def classify(name, cmd=""):
@@ -68,7 +68,7 @@ def classify(name, cmd=""):
     for pat, dept, role, desc in ROLES:
         if re.search(pat, hay):
             return dept, role, desc
-    return "Sonstiges", "unklassifiziert", ""
+    return "Unassigned", "unclassified", ""
 
 def head_comment(path):
     """Erste erklaerende Kommentarzeile eines Skripts."""
@@ -100,28 +100,70 @@ def tmux_sessions():
                         "name": name, "socket": sock.name,
                         "started": created, "runtime_s": int(time.time()) - created,
                         "windows": wins, "dept": dept, "role": role, "desc": desc,
-                        "trigger": "dauerhaft", "can_kill": True, "can_prompt": True})
+                        "trigger": "persistent", "can_kill": True, "can_prompt": True})
     return out
 
 def agent_processes():
+    """Alle Agentenprozesse mit Eltern-Kind-Beziehung.
+
+    Ein Subagent ist hier schlicht ein Agentenprozess, dessen Elternteil selbst
+    ein Agentenprozess ist. Das ist praeziser als jede gepflegte Liste: es zeigt,
+    was TATSAECHLICH gestartet wurde, nicht was jemand vorhatte.
+    """
     raw = sh("ps -eo pid,ppid,etimes,rss,args --no-headers 2>/dev/null")
-    procs = []
+    procs = {}
     for line in raw.splitlines():
         m = re.match(r"\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.*)", line)
         if not m:
             continue
         pid, ppid, et, rss, args = int(m[1]), int(m[2]), int(m[3]), int(m[4]), m[5]
-        if not re.search(r"claude|codex|opencode|hermes", args):
+        if re.search(r"grep|--no-headers|ps -eo", args):
             continue
-        if re.search(r"grep|--no-headers", args):
+        if not re.search(r"\bclaude\b|\bcodex\b|opencode|hermes", args):
             continue
-        tool = ("claude" if "claude" in args else
+        tool = ("hermes" if "hermes" in args else
                 "codex" if "codex" in args else
-                "opencode" if "opencode" in args else "hermes")
-        procs.append({"kind": "process", "id": f"pid:{pid}", "pid": pid, "ppid": ppid,
+                "opencode" if "opencode" in args else "claude")
+        # Sitzungskennung, wo sie in der Kommandozeile steht (Claude SDK, codex resume)
+        sid = None
+        ms = re.search(r"(cse_[A-Za-z0-9]+)", args) or re.search(r"resume\s+([0-9a-f-]{8,})", args)
+        if ms:
+            sid = ms.group(1)
+        procs[pid] = {"kind": "process", "id": f"pid:{pid}", "pid": pid, "ppid": ppid,
                       "tool": tool, "runtime_s": et, "rss_mb": rss // 1024,
-                      "cmd": args[:150], "can_kill": True, "can_prompt": False})
-    return procs
+                      "session_id": sid, "cmd": args[:170],
+                      "label": short_label(args, tool),
+                      "can_kill": True, "can_prompt": False, "children": []}
+    # Kinder anhaengen; Wurzeln sind die, deren Elternteil kein Agent ist
+    roots = []
+    for pid, p in procs.items():
+        parent = procs.get(p["ppid"])
+        if parent:
+            parent["children"].append(pid)
+            p["is_subagent"] = True
+        else:
+            p["is_subagent"] = False
+            roots.append(pid)
+    for pid, p in procs.items():
+        p["child_count"] = len(p["children"])
+    return {"by_pid": procs, "roots": roots}
+
+def short_label(args, tool):
+    """Sprechender Kurzname statt der vollen Kommandozeile."""
+    if "remote-control" in args:
+        return f"{tool} remote-control"
+    if "app-server" in args:
+        return f"{tool} app-server"
+    if "--print" in args or "-p " in args:
+        return f"{tool} headless task"
+    if "exec" in args and tool == "codex":
+        return "codex exec"
+    if "gateway" in args:
+        return "hermes gateway"
+    m = re.search(r"scripts/([a-z0-9_.-]+)\.py", args)
+    if m:
+        return m.group(1)
+    return f"{tool} process"
 
 def cron_jobs():
     out = []
@@ -236,14 +278,25 @@ def token_usage():
     return out
 
 def collect():
-    sessions = tmux_sessions()
-    procs = agent_processes()
-    # Prozesse den Sitzungen zuordnen: ueber die tmux-Serverprozesse
+    tree = agent_processes()
+    procs = tree["by_pid"]
+    toks = token_usage()
+    # Token den Prozessen zuordnen, wo die Sitzungskennung passt
+    for p in procs.values():
+        sid = p.get("session_id")
+        if sid:
+            for key, t in toks.items():
+                if sid.startswith(key) or key.startswith(sid[:8]):
+                    p["tokens"] = t
+                    break
     return {"generated_at": int(time.time()),
-            "sessions": sessions, "processes": procs,
+            "sessions": tmux_sessions(),
+            "processes": list(procs.values()),
+            "process_roots": tree["roots"],
             "cron": cron_jobs(), "hermes": hermes_jobs(),
-            "tokens": token_usage(),
+            "tokens": toks,
             "host": os.uname().nodename}
+
 
 if __name__ == "__main__":
     print(json.dumps(collect(), indent=2, ensure_ascii=False))
