@@ -332,6 +332,47 @@ def tag_host(items, host="sandy"):
         i.setdefault("host", host)
     return items
 
+
+# ── Kanaele ────────────────────────────────────────────────────────────────
+# Florians Bild, und es ist das richtige: es gibt genau ZWEI Wege, ueber die er
+# Auftraege in das Projekt gibt — diesen Claude-Code-Chat auf seinem Laptop und
+# den Hermes-Agenten auf Sandy. Alles andere haengt an einem der beiden oder
+# laeuft autonom weiter, nachdem es einmal von dort angestossen wurde.
+#
+# Bis 31.08. stand Hermes als eine Einheit unter fuenf in "Leadership". Das war
+# sachlich vertretbar und trotzdem irrefuehrend: es verbarg, dass er kein
+# Untergebener ist, sondern ein gleichrangiger Eingang.
+CHANNELS = {
+    "claude": {"id": "channel:claude", "name": "Claude Code",
+               "role": "Prompt channel · Florian's laptop",
+               "desc": "Florian talks to it directly. Drives the sessions on Sandy over "
+                       "SSH, sets up and maintains the cron jobs, coordinates with Hermes.",
+               "host": "laptop"},
+    "hermes": {"id": "channel:hermes", "name": "Hermes",
+               "role": "Prompt channel · deputy product owner",
+               "desc": "Florian messages it from his phone. Supervises the coding sessions "
+                       "and checks Gmail, n8n, Make and Zapier on his behalf. Owns its own jobs.",
+               "host": "sandy"},
+    "autonomous": {"id": "channel:autonomous", "name": "Running autonomously",
+               "role": "Started once, still going",
+               "desc": "Work that no longer needs a channel: it was kicked off from one of "
+                       "the two and now runs on its own until its end date.",
+               "host": "sandy"},
+}
+
+def channel_of(item):
+    """Welchem Kanal gehoert ein Eintrag? Ehrlich zugeordnet, nicht geraten."""
+    name = (item.get("name") or "") + " " + (item.get("role") or "")
+    if item.get("kind") == "hermes_job" or "Hermes" in name:
+        return "hermes"
+    if item.get("host") == "laptop":
+        return "claude"
+    if re.search(r"tao|Quant research", name, re.I):
+        return "autonomous"
+    # Die Fernsteuerungs-Naben und alle cron-Jobs wurden ueber den Claude-Kanal
+    # eingerichtet und werden von dort gepflegt.
+    return "claude"
+
 def collect():
     tree = agent_processes()
     procs = tree["by_pid"]
@@ -345,13 +386,19 @@ def collect():
                     p["tokens"] = t
                     break
     hn = hermes_node()
+    sess, crons, hjobs = tag_host(tmux_sessions()), tag_host(cron_jobs()), tag_host(hermes_jobs())
+    for it in sess + crons + hjobs + LAPTOP_NODES + ([hn] if hn else []):
+        it["channel"] = channel_of(it)
+    if hn:
+        hn["channel"] = "hermes"          # Hermes IST der Kanal, nicht sein Insasse
     return {"generated_at": int(time.time()),
+            "channels": CHANNELS,
             "hosts": {"sandy": "Sandy · Hetzner server", "laptop": "Florian's laptop"},
             "laptop": LAPTOP_NODES,
-            "sessions": tag_host(tmux_sessions()),
+            "sessions": sess,
             "processes": list(procs.values()),
             "process_roots": tree["roots"],
-            "cron": tag_host(cron_jobs()), "hermes": tag_host(hermes_jobs()),
+            "cron": crons, "hermes": hjobs,
             "hermes_node": hn,
             "tokens": toks,
             "host": os.uname().nodename}
