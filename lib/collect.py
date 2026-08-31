@@ -308,6 +308,25 @@ def hermes_node():
             "can_kill": False, "can_prompt": True, "prompt_via": "hermes",
             "spawns": "few · own cron jobs"}
 
+# Der Laptop laesst sich von hier aus nicht messen — dieser Dienst laeuft auf
+# Sandy. Er wird deshalb als bekannter Knoten deklariert und ausdruecklich als
+# solcher markiert, damit niemand ihn fuer eine Messung haelt.
+LAPTOP_NODES = [
+    {"kind": "declared", "id": "laptop:claude-code", "name": "Claude Code",
+     "dept": "Leadership", "role": "Cross-cutting assistant",
+     "desc": "Florian's assistant on his laptop. Drives the sessions on Sandy over SSH, "
+             "coordinates with Hermes, and handles the work that needs judgement. "
+             "Not measurable from here - declared, not observed.",
+     "host": "laptop", "trigger": "interactive", "spawns": "few - Task/opencode/codex",
+     "can_kill": False, "can_prompt": False},
+    {"kind": "declared", "id": "laptop:browser", "name": "agent-browser",
+     "dept": "Operations", "role": "Logged-in browser",
+     "desc": "Drives Florian's signed-in sessions (X, Zendesk, Make) from the laptop.",
+     "host": "laptop", "trigger": "on demand",
+     "can_kill": False, "can_prompt": False},
+]
+
+
 def tag_host(items, host="sandy"):
     for i in items:
         i.setdefault("host", host)
