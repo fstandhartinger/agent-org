@@ -43,24 +43,45 @@ button:hover{background:#26303d}
 button.danger{color:var(--red);border-color:#4a2626}
 input[type=text],input[type=password]{flex:1;min-width:140px;font:inherit;font-size:13px;padding:6px 10px;
  border-radius:8px;background:#10151c;color:var(--ink);border:1px solid var(--line)}
-/* ── classic org chart ── */
-#chart{overflow-x:auto;padding:8px 2px 20px}
-.tree{display:flex;flex-direction:column;align-items:center;min-width:max-content}
-.tier{display:flex;gap:16px;justify-content:center;align-items:flex-start;flex-wrap:nowrap}
+/* ── org chart: departments are COLUMNS, units stack DOWNWARDS ──
+   Die alte Form legte alle ~22 Einheiten einer Ebene nebeneinander → gut
+   5000 px breit, keine 400 px hoch. Jetzt begrenzt das Grid die Breite auf
+   die Zahl der Abteilungen und die Tiefe waechst nach unten. */
+#chart{overflow-x:auto;padding:8px 2px 24px}
+.tree{display:flex;flex-direction:column;align-items:center}
 .node{background:var(--panel);border:1px solid var(--line);border-radius:10px;
- padding:9px 12px;min-width:150px;max-width:210px;text-align:center;position:relative}
-.node .nt{font-weight:650;font-size:13.5px}
-.node .nr{color:var(--mut);font-size:11.5px;margin-top:2px}
-.node .nb{margin-top:6px;display:flex;gap:4px;justify-content:center;flex-wrap:wrap}
+ padding:8px 10px;text-align:center;position:relative;overflow-wrap:anywhere}
+.node .nt{font-weight:650;font-size:13px;line-height:1.3}
+.node .nr{color:var(--mut);font-size:11.5px;margin-top:2px;line-height:1.3}
+.node .nb{margin-top:5px;display:flex;gap:4px;justify-content:center;flex-wrap:wrap}
+/* Badges duerfen im Diagramm umbrechen – mit nowrap ragten lange wie
+   "SPAWNS · few · via opencode/codex" seitlich aus dem Kasten heraus. */
+.node .badge{white-space:normal;font-size:9.5px;padding:1px 6px;max-width:100%}
 .node.root{border-color:#3c4a5e;background:#1a222d}
-.branch{display:flex;flex-direction:column;align-items:center}
 .vline{width:2px;height:16px;background:var(--line)}
-.hwrap{display:flex;align-items:flex-start;position:relative;padding-top:16px}
-.hwrap::before{content:"";position:absolute;top:0;left:calc(50% / var(--n) + 0px);
- right:calc(50% / var(--n));height:2px;background:var(--line)}
-.kid{display:flex;flex-direction:column;align-items:center;padding:0 8px;position:relative}
-.kid::before{content:"";position:absolute;top:-16px;left:50%;width:2px;height:16px;background:var(--line)}
-@media(max-width:600px){.card.sub{margin-left:11px}.node{min-width:126px;font-size:13px}.tier{gap:9px}}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(184px,1fr));
+ width:100%;align-items:start;column-gap:0;row-gap:26px;margin-top:14px}
+.col{position:relative;padding:0 6px;min-width:0}
+.col::before{content:"";position:absolute;top:-14px;left:50%;width:2px;height:14px;background:var(--line)}
+.col::after{content:"";position:absolute;top:-14px;left:0;right:0;height:2px;background:var(--line)}
+.col.rowstart::after{left:50%}
+.col.rowend::after{right:50%}
+.col.alone::after{display:none}
+/* Umgebrochene Reihen haengen an keiner Sammelschiene – dann lieber gar
+   keine Linie als eine, die ins Leere zeigt. */
+.col.norail::before,.col.norail::after{display:none}
+.chead .nt{font-size:12px;letter-spacing:.4px;text-transform:uppercase}
+/* Verzeichnisbaum je Spalte: durchgehende Senkrechte + Stummel je Kasten. */
+.stack{position:relative;padding-left:8px;margin-top:12px}
+.stack::before{content:"";position:absolute;left:8px;top:-12px;width:2px;height:12px;background:var(--line)}
+.leaf{position:relative;padding:0 0 8px 14px}
+.leaf::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--line)}
+.leaf:last-child::before{bottom:auto;height:19px}
+.leaf::after{content:"";position:absolute;left:0;top:17px;width:14px;height:2px;background:var(--line)}
+.leaf .node{text-align:left}
+.leaf .node .nb{justify-content:flex-start}
+.leaf .stack{margin-top:8px}
+@media(max-width:600px){.card.sub{margin-left:11px}.node{font-size:12.5px}}
 .hostbox{border:1px dashed #3a4655;border-radius:14px;padding:10px 12px 4px;margin:14px 0}
 .hostbox>.hh{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--blue);
  margin:-2px 0 8px;font-weight:700}
@@ -320,6 +341,7 @@ function node(title,role,badgeHtml,cls){
 }
 function renderChart(){
   const all=items();
+  const el=document.getElementById("chart");
   if(HOSTS){
     let h="";
     for(const [key,label] of Object.entries(DATA.hosts||{})){
@@ -328,38 +350,58 @@ function renderChart(){
       h+=`<div class="hostbox ${key==="laptop"?"laptop":""}"><div class="hh">${esc(label)}</div>`
         +chartFor(L)+`</div>`;
     }
-    document.getElementById("chart").innerHTML=h;return;
+    el.innerHTML=h;
+  }else{
+    el.innerHTML=chartFor(all);
   }
-  document.getElementById("chart").innerHTML=chartFor(all);
+  busify();
+}
+function leaf(it){
+  let h=`<div class="leaf">${node(it.name,it.role,badges(it))}`;
+  if(SUBS&&it.kind==="session"){
+    const kids=(DATA.processes||[]).filter(p=>p.is_subagent);
+    if(kids.length&&/Remote-control hub/i.test(it.role||"")){
+      h+=`<div class="stack">`;
+      for(const k of kids)
+        h+=`<div class="leaf">${node(k.label,`${k.tool} · ${dur(k.runtime_s)}`,
+             `<span class="badge b-sub">SUBAGENT</span>`)}</div>`;
+      h+=`</div>`;
+    }
+  }
+  return h+`</div>`;
 }
 function chartFor(list){
   const by={};for(const i of list)(by[i.dept||"Unassigned"]??=[]).push(i);
   const depts=DEPTS.filter(d=>by[d]&&by[d].length);
-  let h=`<div class="tree">${node("Florian","owner","","root")}<div class="vline"></div>`;
-  h+=`<div class="hwrap" style="--n:${depts.length}">`;
+  let h=`<div class="tree">${node("Florian","owner","","root")}<div class="vline"></div><div class="cols">`;
   for(const d of depts){
     const L=by[d];
-    h+=`<div class="kid">${node(d,`${L.length} unit${L.length>1?"s":""}`,"","root")}`;
-    h+=`<div class="vline"></div><div class="hwrap" style="--n:${L.length}">`;
-    for(const it of L){
-      h+=`<div class="kid">${node(it.name,it.role,badges(it))}`;
-      if(SUBS&&it.kind==="session"){
-        const kids=(DATA.processes||[]).filter(p=>p.is_subagent);
-        if(kids.length&&/Remote-control hub/i.test(it.role||"")){
-          h+=`<div class="vline"></div><div class="hwrap" style="--n:${kids.length}">`;
-          for(const k of kids)
-            h+=`<div class="kid">${node(k.label,`${k.tool} · ${dur(k.runtime_s)}`,
-                 `<span class="badge b-sub">SUBAGENT</span>`)}</div>`;
-          h+=`</div>`;
-        }
-      }
-      h+=`</div>`;
-    }
+    h+=`<div class="col">${node(d,`${L.length} unit${L.length>1?"s":""}`,"","root chead")}`
+      +`<div class="stack">`;
+    for(const it of L)h+=leaf(it);
     h+=`</div></div>`;
   }
-  h+=`</div></div>`;
-  return h;
+  return h+`</div></div>`;
 }
+// Die waagerechte Sammelschiene wird aus je einem Segment pro Spalte gebaut.
+// Wo das Grid umbricht, weiss nur der Layout-Engine — also nach dem Rendern
+// messen, welche Spalten in derselben Reihe sitzen.
+function busify(){
+  for(const cols of document.querySelectorAll("#chart .cols")){
+    const kids=[...cols.children];
+    for(const k of kids)k.classList.remove("rowstart","rowend","alone","norail");
+    const rows=new Map();
+    for(const k of kids){const t=k.offsetTop;if(!rows.has(t))rows.set(t,[]);rows.get(t).push(k)}
+    let first=true;
+    for(const r of rows.values()){
+      if(!first){for(const k of r)k.classList.add("norail");continue}
+      first=false;
+      if(r.length===1)r[0].classList.add("alone");
+      else{r[0].classList.add("rowstart");r[r.length-1].classList.add("rowend")}
+    }
+  }
+}
+addEventListener("resize",()=>{if(VIEW==="chart")busify()});
 function render(){
   if(!DATA)return;
   document.getElementById("out").hidden=(VIEW!=="list");
