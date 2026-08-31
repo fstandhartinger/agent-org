@@ -281,58 +281,32 @@ def token_usage():
 def hermes_node():
     """Hermes als eigener Ast, nicht nur als Sammlung von Jobs.
 
-    Er ist stellvertretender Product Owner: ein dauerhaft laufender Agent mit
-    eigenen Diensten und eigenen Jobs. Bis 31.08. tauchte er nur als seine
-    cron-Eintraege auf — das verbarg, dass die Jobs einen gemeinsamen Traeger
-    haben, den man auch ansprechen und beenden kann.
+    Erkennung ueber den Prozess, NICHT ueber `systemctl --user`: dieser Dienst
+    laeuft als System-Unit und hat keinen Zugriff auf die Nutzer-Sitzung des
+    Nutzers flori. Am 31.08. blieb Hermes deshalb unsichtbar, obwohl er lief.
     """
-    units = {}
-    for unit in ("hermes-gateway", "hermes-dashboard", "hermes-browser"):
-        st = sh(f"systemctl --user is-active {unit} 2>/dev/null").strip()
-        if st:
-            units[unit] = st
-    if not units:
+    procs = []
+    for line in sh("ps -eo pid,etimes,rss,args --no-headers 2>/dev/null").splitlines():
+        m = re.match(r"\s*(\d+)\s+(\d+)\s+(\d+)\s+(.*)", line)
+        if m and "hermes" in m[4] and "grep" not in m[4]:
+            procs.append((int(m[1]), int(m[2]), int(m[3]) // 1024, m[4]))
+    if not procs:
         return None
-    started = None
-    raw = sh("systemctl --user show hermes-gateway -p ActiveEnterTimestampMonotonic 2>/dev/null")
-    m = re.search(r"=(\d+)", raw)
-    if m and int(m.group(1)) > 0:
-        try:
-            up = float(Path("/proc/uptime").read_text().split()[0])
-            started = int(time.time() - (up - int(m.group(1)) / 1e6))
-        except Exception:
-            pass
-    pid = None
-    ps = sh("pgrep -f 'hermes_cli.main gateway' 2>/dev/null").strip().splitlines()
-    if ps:
-        pid = int(ps[0])
-    return {"kind": "agent", "id": f"hermes:gateway",
+    gateway = next((p for p in procs if "gateway" in p[3]), procs[0])
+    parts = []
+    for key, label in (("gateway", "gateway"), ("dashboard", "dashboard"), ("browser", "browser")):
+        if any(key in p[3] for p in procs):
+            parts.append(label)
+    return {"kind": "agent", "id": "hermes:gateway",
             "name": "Hermes", "dept": "Leadership", "role": "Deputy product owner",
             "desc": "Supervises the coding sessions; checks Gmail, n8n, Make and Zapier "
-                    "on Florian's behalf. Runs as a systemd service, owns its own jobs.",
-            "trigger": "persistent", "services": units, "pid": pid,
-            "started": started, "runtime_s": (int(time.time()) - started) if started else None,
+                    "on Florian's behalf. Owns the jobs listed under him.",
+            "trigger": "persistent", "host": "sandy",
+            "services": {k: "running" for k in parts} or {"gateway": "running"},
+            "pid": gateway[0], "runtime_s": gateway[1], "rss_mb": gateway[2],
+            "proc_count": len(procs),
             "can_kill": False, "can_prompt": True, "prompt_via": "hermes",
             "spawns": "few · own cron jobs"}
-
-
-# Der Laptop laesst sich von hier aus nicht messen — dieser Dienst laeuft auf
-# Sandy. Er wird deshalb als bekannter Knoten deklariert, ausdruecklich als
-# solcher markiert, damit niemand ihn fuer eine Messung haelt.
-LAPTOP_NODES = [
-    {"kind": "declared", "id": "laptop:claude-code", "name": "Claude Code",
-     "dept": "Leadership", "role": "Cross-cutting assistant",
-     "desc": "Florian's assistant on his laptop. Drives the sessions on Sandy over SSH, "
-             "coordinates with Hermes, and does the work that needs judgement. "
-             "Not measurable from here — declared, not observed.",
-     "host": "laptop", "trigger": "interactive", "spawns": "few · Task/opencode/codex",
-     "can_kill": False, "can_prompt": False},
-    {"kind": "declared", "id": "laptop:browser", "name": "agent-browser",
-     "dept": "Operations", "role": "Logged-in browser",
-     "desc": "Drives Florian's signed-in sessions (X, Zendesk, Make) from the laptop.",
-     "host": "laptop", "trigger": "on demand",
-     "can_kill": False, "can_prompt": False},
-]
 
 def tag_host(items, host="sandy"):
     for i in items:
