@@ -57,6 +57,17 @@ input[type=text],input[type=password]{flex:1;min-width:140px;font:inherit;font-s
 .kid{display:flex;flex-direction:column;align-items:center;padding:0 8px;position:relative}
 .kid::before{content:"";position:absolute;top:-16px;left:50%;width:2px;height:16px;background:var(--line)}
 @media(max-width:600px){.card.sub{margin-left:11px}.node{min-width:126px;font-size:13px}.tier{gap:9px}}
+.hostbox{border:1px dashed #3a4655;border-radius:14px;padding:10px 12px 4px;margin:14px 0}
+.hostbox>.hh{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--blue);
+ margin:-2px 0 8px;font-weight:700}
+.hostbox.laptop{border-color:#4a3f5e}.hostbox.laptop>.hh{color:var(--violet)}
+#term{position:fixed;inset:auto 0 0 0;height:62vh;background:#0b0f14;border-top:1px solid var(--line);
+ z-index:20;display:flex;flex-direction:column}
+#term .th{display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid var(--line)}
+#term .tt{font-weight:650;font-size:14px}#term .tsub{color:var(--mut);font-size:12px}
+#term pre{flex:1;margin:0;padding:11px 13px;overflow:auto;font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;
+ color:#c8d2de;white-space:pre-wrap;word-break:break-word}
+#term .ti{display:flex;gap:7px;padding:9px 11px;border-top:1px solid var(--line)}
 #gate{padding:44px 18px;max-width:400px;margin:0 auto}
 #gate input{width:100%;margin:10px 0}
 .err{color:var(--red);font-size:13px;margin-top:8px}
@@ -80,15 +91,28 @@ input[type=text],input[type=password]{flex:1;min-width:140px;font:inherit;font-s
     <button class="tg" id="t-chart" onclick="setView('chart')">Org chart</button>
     <button class="tg" id="t-sub" onclick="toggleSubs()">Show subagents</button>
     <button class="tg" id="t-rt" onclick="toggleRT()">Live: on</button>
+    <button class="tg" id="t-host" onclick="toggleHosts()">System boundaries</button>
   </div>
   <div class="live" id="stamp" style="margin-top:7px"></div>
 </header>
 <main><div id="out"></div><div id="chart" hidden></div></main>
+<div id="term" hidden>
+  <div class="th"><span class="tt" id="tname"></span><span class="tsub" id="tsub"></span>
+    <span style="flex:1"></span>
+    <button onclick="termRefresh()">Refresh</button>
+    <button onclick="closeTerm()">Close</button></div>
+  <pre id="tout">…</pre>
+  <div class="ti"><input type="text" id="tin" placeholder="Type a message and press Enter…"
+    onkeydown="if(event.key==='Enter')termSend()">
+    <button onclick="termSend()">Send</button></div>
+</div>
 </div>
 <script>
 const DEPTS=["Leadership","Production","Distribution","Research","Security","Operations","Unassigned"];
 let TOKEN=localStorage.getItem("orgtok")||"", DATA=null, ES=null;
 let VIEW=localStorage.getItem("orgview")||"list";
+let HOSTS=localStorage.getItem("orghosts")==="1";
+let TERM=null, TERMTIMER=null;
 let SUBS=localStorage.getItem("orgsubs")==="1";
 let RT=localStorage.getItem("orgrt")!=="0";
 
@@ -106,6 +130,49 @@ function setView(v){VIEW=v;localStorage.setItem("orgview",v);
 function toggleSubs(){SUBS=!SUBS;localStorage.setItem("orgsubs",SUBS?"1":"0");
   document.getElementById("t-sub").classList.toggle("on",SUBS);
   document.getElementById("t-sub").textContent=SUBS?"Hide subagents":"Show subagents";render()}
+function toggleHosts(){HOSTS=!HOSTS;localStorage.setItem("orghosts",HOSTS?"1":"0");
+  document.getElementById("t-host").classList.toggle("on",HOSTS);render()}
+
+function openTerm(id,name,role){
+  TERM={id,name,role};
+  document.getElementById("term").hidden=false;
+  document.getElementById("tname").textContent=name;
+  document.getElementById("tsub").textContent=role||"";
+  termRefresh();
+  if(TERMTIMER)clearInterval(TERMTIMER);
+  TERMTIMER=setInterval(termRefresh,4000);
+}
+function closeTerm(){document.getElementById("term").hidden=true;
+  if(TERMTIMER){clearInterval(TERMTIMER);TERMTIMER=null}TERM=null}
+async function termRefresh(){
+  if(!TERM)return;
+  if(TERM.id==="hermes:gateway"){
+    document.getElementById("tout").textContent=
+      "Hermes has no terminal pane. Type a message below — it goes straight into his agent loop, "+
+      "and his reply appears here.";
+    return;
+  }
+  try{
+    const r=await fetch("/api/pane?id="+encodeURIComponent(TERM.id)+"&lines=200",
+      {headers:{"X-Org-Token":TOKEN}});
+    const d=await r.json();
+    const el=document.getElementById("tout");
+    const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<40;
+    el.textContent=(d.text||"").replace(/\n{3,}/g,"\n\n").trimEnd()||"(pane is empty)";
+    if(atBottom)el.scrollTop=el.scrollHeight;
+  }catch(e){}
+}
+async function termSend(){
+  const el=document.getElementById("tin"),text=el.value.trim();if(!text||!TERM)return;
+  el.value="";el.disabled=true;
+  const out=document.getElementById("tout");
+  out.textContent+="\n\n> "+text+"\n(sending…)";out.scrollTop=out.scrollHeight;
+  const r=await api("/api/prompt",{method:"POST",body:JSON.stringify({id:TERM.id,text})});
+  el.disabled=false;el.focus();
+  if(r.reply){out.textContent+="\n\n"+r.reply;out.scrollTop=out.scrollHeight}
+  else setTimeout(termRefresh,900);
+}
+
 function toggleRT(){RT=!RT;localStorage.setItem("orgrt",RT?"1":"0");
   document.getElementById("t-rt").textContent="Live: "+(RT?"on":"off");
   document.getElementById("t-rt").classList.toggle("on",RT);
@@ -140,7 +207,9 @@ function items(){
   const out=[];
   for(const s of DATA.sessions||[])out.push({...s});
   for(const c of DATA.cron||[])out.push({...c});
-  for(const h of DATA.hermes||[])out.push({...h});
+  for(const h of DATA.hermes||[])out.push({...h,parent:"Hermes"});
+  if(DATA.hermes_node)out.push({...DATA.hermes_node});
+  for(const l of DATA.laptop||[])out.push({...l});
   for(const it of out){
     if(/Quant research/i.test(it.role||""))it.spawns="many · 6 in parallel";
     else if(/Product cycle|Goal audit|Deputy product owner|Inbox watcher/i.test(it.role||""))
@@ -170,8 +239,7 @@ function procCard(p){
 }
 function card(it){
   const a=[];
-  if(it.can_prompt)a.push(`<input type="text" id="p_${esc(it.id)}" placeholder="Message to this session…">
-    <button onclick="sendPrompt('${esc(it.id)}')">Send</button>`);
+  if(it.can_prompt)a.push(`<button onclick="openTerm('${esc(it.id)}','${esc(it.name)}','${esc(it.role||"")}')">Remote control</button>`);
   if(it.can_kill)a.push(`<button class="danger" onclick="kill('${esc(it.id)}','${esc(it.name)}')">Kill</button>`);
   const m=[];
   if(it.runtime_s!=null)m.push(`running ${dur(it.runtime_s)}`);
@@ -185,8 +253,32 @@ function card(it){
     ${a.length?`<div class="acts">${a.join("")}</div>`:""}</div>`;
 }
 
+function deptBlocks(list){
+  const by={};for(const i of list)(by[i.dept||"Unassigned"]??=[]).push(i);
+  let h="";
+  for(const d of DEPTS){
+    const L=by[d];if(!L||!L.length)continue;
+    h+=`<div class="dept">${esc(d)} · ${L.length}</div>`;
+    for(const i of L.filter(x=>x.kind==="session"||x.kind==="agent"))h+=card(i);
+    for(const i of L.filter(x=>!(x.kind==="session"||x.kind==="agent")))h+=card(i);
+  }
+  return h;
+}
 function renderList(){
-  const list=items(), by={};
+  const list=items();
+  if(HOSTS){
+    let h="";
+    for(const [key,label] of Object.entries(DATA.hosts||{})){
+      const L=list.filter(i=>(i.host||"sandy")===key);
+      if(!L.length)continue;
+      h+=`<div class="hostbox ${key==="laptop"?"laptop":""}"><div class="hh">${esc(label)} · ${L.length}</div>`
+        +deptBlocks(L)+`</div>`;
+    }
+    if(SUBS)h+=procBlock();
+    document.getElementById("out").innerHTML=h||`<div class="empty">Nothing found.</div>`;
+    return;
+  }
+  const by={};
   for(const i of list)(by[i.dept||"Unassigned"]??=[]).push(i);
   let h="";
   for(const d of DEPTS){
@@ -195,7 +287,12 @@ function renderList(){
     for(const i of L.filter(x=>x.kind==="session"))h+=card(i);
     for(const i of L.filter(x=>x.kind!=="session"))h+=card(i);
   }
-  if(SUBS){
+  if(SUBS)h+=procBlock();
+  document.getElementById("out").innerHTML=h||`<div class="empty">Nothing found.</div>`;
+}
+function procBlock(){
+  let h="";
+  {
     const procs=(DATA.processes||[]);
     const subs=procs.filter(p=>p.is_subagent), roots=procs.filter(p=>!p.is_subagent);
     h+=`<div class="dept">Live processes · ${procs.length} (${subs.length} subagents)</div>`;
@@ -209,7 +306,7 @@ function renderList(){
     const orphans=subs.filter(s=>!roots.some(r=>(r.children||[]).includes(s.pid)));
     for(const o of orphans)h+=procCard(o);
   }
-  document.getElementById("out").innerHTML=h||`<div class="empty">Nothing found.</div>`;
+  return h;
 }
 
 function node(title,role,badgeHtml,cls){
@@ -218,7 +315,20 @@ function node(title,role,badgeHtml,cls){
     ${badgeHtml?`<div class="nb">${badgeHtml}</div>`:""}</div>`;
 }
 function renderChart(){
-  const list=items();
+  const all=items();
+  if(HOSTS){
+    let h="";
+    for(const [key,label] of Object.entries(DATA.hosts||{})){
+      const L=all.filter(i=>(i.host||"sandy")===key);
+      if(!L.length)continue;
+      h+=`<div class="hostbox ${key==="laptop"?"laptop":""}"><div class="hh">${esc(label)}</div>`
+        +chartFor(L)+`</div>`;
+    }
+    document.getElementById("chart").innerHTML=h;return;
+  }
+  document.getElementById("chart").innerHTML=chartFor(all);
+}
+function chartFor(list){
   const by={};for(const i of list)(by[i.dept||"Unassigned"]??=[]).push(i);
   const depts=DEPTS.filter(d=>by[d]&&by[d].length);
   let h=`<div class="tree">${node("Florian","owner","","root")}<div class="vline"></div>`;
@@ -244,7 +354,7 @@ function renderChart(){
     h+=`</div></div>`;
   }
   h+=`</div></div>`;
-  document.getElementById("chart").innerHTML=h;
+  return h;
 }
 function render(){
   if(!DATA)return;
@@ -271,5 +381,6 @@ document.getElementById("t-sub").textContent=SUBS?"Hide subagents":"Show subagen
 document.getElementById("t-sub").classList.toggle("on",SUBS);
 document.getElementById("t-rt").textContent="Live: "+(RT?"on":"off");
 document.getElementById("t-rt").classList.toggle("on",RT);
+document.getElementById("t-host").classList.toggle("on",HOSTS);
 setView(VIEW);connect();
 </script></body></html>

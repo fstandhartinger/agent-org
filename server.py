@@ -51,6 +51,21 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, json.dumps({"ok": True, "ts": int(time.time())}))
         if path in ("/", "/index.html"):
             return self._send(200, (STATIC / "index.html").read_bytes(), "text/html; charset=utf-8")
+        if path == "/api/pane":
+            # Fernsteuerung braucht Sicht: die letzten Zeilen des Terminals.
+            if not authorised(self):
+                return self._send(401, json.dumps({"error": "token required"}))
+            q = parse_qs(urlparse(self.path).query)
+            sid = q.get("id", [""])[0]
+            lines = min(int(q.get("lines", ["120"])[0] or 120), 600)
+            m = re.fullmatch(r"tmux:([A-Za-z0-9_.-]+):([A-Za-z0-9_.-]+)", sid)
+            if not m:
+                return self._send(400, json.dumps({"error": "bad id"}))
+            sock, name = m.groups()
+            r = tmux(sock, "capture-pane", "-p", "-S", f"-{lines}", "-t", name)
+            return self._send(200, json.dumps({"ok": r.returncode == 0,
+                                               "text": r.stdout or "", "id": sid}))
+
         if path == "/api/stream":
             # Server-Sent Events: der Browser haelt eine Verbindung offen und
             # bekommt den frisch gemessenen Zustand geschickt, statt zu pollen.
@@ -119,6 +134,12 @@ class H(BaseHTTPRequestHandler):
 
         if path == "/api/prompt":
             sid, text = str(body.get("id", "")), str(body.get("text", ""))
+            if sid == "hermes:gateway" and text.strip():
+                # Hermes hat keinen tmux-Pane; er nimmt Auftraege ueber sein CLI an.
+                r = subprocess.run(["hermes", "-z", text], capture_output=True,
+                                   text=True, timeout=280)
+                return self._send(200, json.dumps({"ok": r.returncode == 0,
+                                                   "reply": (r.stdout or "")[-4000:]}))
             m = re.fullmatch(r"tmux:([A-Za-z0-9_.-]+):([A-Za-z0-9_.-]+)", sid)
             if not m or not text.strip():
                 return self._send(400, json.dumps({"error": "id or text missing"}))
