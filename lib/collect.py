@@ -146,6 +146,23 @@ def agent_processes():
                       "session_id": sid, "cmd": args[:170],
                       "label": short_label(args, tool),
                       "can_kill": True, "can_prompt": False, "children": []}
+    # Doppelte Eintraege desselben Dienstes zusammenfassen: der Fernsteuerungs-Hub
+    # erscheint als tmux-Wrapper UND als eigentlicher Prozess. Nur den echten behalten.
+    seen = {}
+    for pid, p in list(procs.items()):
+        if p["cmd"].startswith("/usr/bin/tmux ") or " tmux -L " in p["cmd"]:
+            del procs[pid]; continue
+        key = (p["label"], p["tool"])
+        if key in seen and "app-server" not in p["cmd"]:
+            # gleicher Dienst, mehrere Prozesse: der aelteste ist der Traeger
+            keep = seen[key]
+            if procs[keep]["runtime_s"] >= p["runtime_s"]:
+                procs[keep]["instances"] = procs[keep].get("instances", 1) + 1
+                del procs[pid]; continue
+            p["instances"] = procs[keep].get("instances", 1) + 1
+            del procs[keep]
+        seen[key] = pid
+
     # Kinder anhaengen; Wurzeln sind die, deren Elternteil kein Agent ist
     roots = []
     for pid, p in procs.items():
