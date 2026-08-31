@@ -5,6 +5,10 @@
 :root{--bg:#0e1116;--panel:#161b23;--line:#252c37;--ink:#e8ecf2;--mut:#8b93a3;
  --moss:#63d297;--amber:#f5a524;--violet:#a78bfa;--blue:#5aa9e6;--red:#f26d6d}
 *{box-sizing:border-box}
+/* the UA rule [hidden]{display:none} loses to any ID selector that sets
+   display (e.g. #term{display:flex}), so the panel stayed on screen.
+   Re-assert it with enough weight to beat every rule in this file. */
+[hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
 header{position:sticky;top:0;z-index:9;background:rgba(14,17,22,.95);backdrop-filter:blur(8px);
  border-bottom:1px solid var(--line);padding:12px 16px}
