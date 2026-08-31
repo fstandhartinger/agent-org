@@ -56,7 +56,8 @@ input[type=text],input[type=password]{flex:1;min-width:140px;font:inherit;font-s
 .node .nb{margin-top:5px;display:flex;gap:4px;justify-content:center;flex-wrap:wrap}
 /* Badges duerfen im Diagramm umbrechen – mit nowrap ragten lange wie
    "SPAWNS · few · via opencode/codex" seitlich aus dem Kasten heraus. */
-.node .badge{white-space:normal;font-size:9.5px;padding:1px 6px;max-width:100%}
+.node .badge{white-space:normal;font-size:9.5px;padding:1.5px 6px;max-width:100%;
+ border-radius:5px;line-height:1.35}
 .node.root{border-color:#3c4a5e;background:#1a222d}
 .vline{width:2px;height:16px;background:var(--line)}
 .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(184px,1fr));
@@ -71,6 +72,7 @@ input[type=text],input[type=password]{flex:1;min-width:140px;font:inherit;font-s
    keine Linie als eine, die ins Leere zeigt. */
 .col.norail::before,.col.norail::after{display:none}
 .chead .nt{font-size:12px;letter-spacing:.4px;text-transform:uppercase}
+@media(min-width:601px){.col>.node,.col>.stack{max-width:300px;margin-left:auto;margin-right:auto}}
 /* Verzeichnisbaum je Spalte: durchgehende Senkrechte + Stummel je Kasten. */
 .stack{position:relative;padding-left:8px;margin-top:12px}
 .stack::before{content:"";position:absolute;left:8px;top:-12px;width:2px;height:12px;background:var(--line)}
@@ -89,9 +91,11 @@ input[type=text],input[type=password]{flex:1;min-width:140px;font:inherit;font-s
 #term{position:fixed;inset:auto 0 0 0;height:62vh;background:#0b0f14;border-top:1px solid var(--line);
  z-index:20;display:flex;flex-direction:column}
 #term .th{display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid var(--line)}
-#term .tt{font-weight:650;font-size:14px}#term .tsub{color:var(--mut);font-size:12px}
+#term .tt{font-weight:650;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#term .tsub{color:var(--mut);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:520px){#term .tsub{display:none}}
 #term pre{flex:1;margin:0;padding:11px 13px;overflow:auto;font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;
- color:#c8d2de;white-space:pre-wrap;word-break:break-word}
+ color:#c8d2de;white-space:pre}
 #term .ti{display:flex;gap:7px;padding:9px 11px;border-top:1px solid var(--line)}
 #gate{padding:44px 18px;max-width:400px;margin:0 auto}
 #gate input{width:100%;margin:10px 0}
