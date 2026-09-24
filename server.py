@@ -15,6 +15,14 @@ from urllib.parse import urlparse, parse_qs
 
 sys.path.insert(0, str(Path(__file__).parent / "lib"))
 import collect as C
+import topics as T
+
+JOB_FILES = {"OUTPUT.md", "RESULT.md", "PROMPT.md", "STATUS.md", "BOARD-INBOX.md"}
+
+def full_state():
+    d = C.collect()
+    d["topic_view"] = T.collect_topics(d.get("cron"))
+    return d
 
 PORT = int(os.environ.get("PORT", "3000"))
 TOKEN = os.environ.get("ORG_TOKEN", "")
@@ -79,7 +87,7 @@ class H(BaseHTTPRequestHandler):
             self.end_headers()
             try:
                 while True:
-                    payload = json.dumps(C.collect(), ensure_ascii=False)
+                    payload = json.dumps(full_state(), ensure_ascii=False)
                     self.wfile.write(b"data: " + payload.encode() + b"\n\n")
                     self.wfile.flush()
                     time.sleep(float(os.environ.get("STREAM_INTERVAL", "5")))
@@ -92,9 +100,28 @@ class H(BaseHTTPRequestHandler):
             if not authorised(self):
                 return self._send(401, json.dumps({"error": "token required"}))
             try:
-                return self._send(200, json.dumps(C.collect(), ensure_ascii=False))
+                return self._send(200, json.dumps(full_state(), ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)[:300]}))
+        if path == "/api/topics":
+            if not authorised(self):
+                return self._send(401, json.dumps({"error": "token required"}))
+            return self._send(200, json.dumps(T.collect_topics(C.cron_jobs()), ensure_ascii=False))
+        if path == "/api/file":
+            # read-only view of a job's own report files; nothing else on disk is reachable
+            if not authorised(self):
+                return self._send(401, json.dumps({"error": "token required"}))
+            q = parse_qs(urlparse(self.path).query)
+            job, name = q.get("job", [""])[0], q.get("name", [""])[0]
+            if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,120}", job) or name not in JOB_FILES:
+                return self._send(400, json.dumps({"error": "bad job or file"}))
+            f = T.JOBS / job / name
+            if not f.is_file() or f.resolve().parent != (T.JOBS / job).resolve():
+                return self._send(404, json.dumps({"error": "no such file"}))
+            size = f.stat().st_size
+            text = T.tail_text(f, 200_000)
+            head = f"[{name} of {job}: last {min(size, 200_000):,} of {size:,} bytes]\n\n" if size > 200_000 else ""
+            return self._send(200, T.SENSITIVE.sub("[redacted]", head + text), "text/plain; charset=utf-8")
         return self._send(404, json.dumps({"error": "not found"}))
 
     def do_POST(self):

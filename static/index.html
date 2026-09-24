@@ -1,111 +1,193 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Agent Org</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>Agents · by topic</title>
 <style>
-:root{--bg:#0e1116;--panel:#161b23;--line:#252c37;--ink:#e8ecf2;--mut:#8b93a3;
- --moss:#63d297;--amber:#f5a524;--violet:#a78bfa;--blue:#5aa9e6;--red:#f26d6d}
+:root{--bg:#0d1015;--panel:#151a22;--panel2:#1a2029;--line:#262e3a;--ink:#e7ebf1;--mut:#8b94a5;--soft:#aeb6c4;
+ --moss:#4fd08a;--amber:#f2a93b;--violet:#a88bfa;--blue:#5aa9e6;--red:#f06a6a;--teal:#38c7c7;
+ --needbg:#2a2012;--needline:#5a4318;--hdr:rgba(13,16,21,.92);--shadow:0 1px 2px rgba(0,0,0,.35);
+ --codex:#4fd08a;--claude:#e8905a;--devin:#6aa8ff;--opencode:#b9a4ff;--script:#9aa3b2;--hermes:#f0c24b;--termbg:#0b0f14}
+[data-theme=light]{--bg:#f5f6f8;--panel:#fff;--panel2:#f0f2f5;--line:#dfe3e9;--ink:#1a1f27;--mut:#667085;--soft:#475467;
+ --moss:#12a150;--amber:#b86e00;--violet:#7c5cd6;--blue:#1f74c2;--red:#d33b3b;--teal:#0f8f8f;
+ --needbg:#fff6e5;--needline:#f1d39b;--hdr:rgba(245,246,248,.92);--shadow:0 1px 2px rgba(16,24,40,.06);
+ --codex:#12894a;--claude:#c2622b;--devin:#1f64d6;--opencode:#6b4fd0;--script:#667085;--hermes:#a07800;--termbg:#fbfbfc}
 *{box-sizing:border-box}
-/* the UA rule [hidden]{display:none} loses to any ID selector that sets
-   display (e.g. #term{display:flex}), so the panel stayed on screen.
-   Re-assert it with enough weight to beat every rule in this file. */
 [hidden]{display:none!important}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
-header{position:sticky;top:0;z-index:9;background:rgba(14,17,22,.95);backdrop-filter:blur(8px);
- border-bottom:1px solid var(--line);padding:12px 16px}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+code,.mono{font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+header{position:sticky;top:0;z-index:9;background:var(--hdr);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+ border-bottom:1px solid var(--line);padding:10px 16px calc(8px) max(16px,env(safe-area-inset-left))}
+.hin{max-width:1240px;margin:0 auto}
 .hrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-h1{margin:0;font-size:17px}
+h1{margin:0;font-size:16.5px;letter-spacing:.1px}
+h1 small{font-weight:500;color:var(--mut);font-size:13px;margin-left:4px}
+.sp{flex:1}
 .live{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mut)}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--red)}
-.dot.on{background:var(--moss);box-shadow:0 0 0 0 rgba(99,210,151,.6);animation:pulse 2s infinite}
-@keyframes pulse{70%{box-shadow:0 0 0 7px rgba(99,210,151,0)}100%{box-shadow:0 0 0 0 rgba(99,210,151,0)}}
-.ctrls{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
-.tg{font:inherit;font-size:12px;padding:5px 11px;border-radius:20px;cursor:pointer;
- background:#1a212b;color:var(--mut);border:1px solid var(--line)}
-.tg.on{background:#22303f;color:var(--ink);border-color:#38506a}
-main{padding:14px 12px 70px;max-width:1180px;margin:0 auto}
-.dept{margin:20px 0 9px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
- color:var(--mut);border-bottom:1px solid var(--line);padding-bottom:5px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:8px}
-.card.sub{margin-left:20px;border-left:3px solid #2f3a49}
-.row{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
-.name{font-weight:650}
-.role{color:var(--mut);font-size:13px}
-.desc{color:#aab2c0;font-size:13px;margin-top:5px}
-.meta{color:var(--mut);font-size:12px;margin-top:6px;display:flex;gap:12px;flex-wrap:wrap}
-.badge{font-size:10.5px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:20px;
- border:1px solid currentColor;white-space:nowrap}
-.b-live{color:var(--moss)}.b-cron{color:var(--amber)}.b-sub{color:var(--blue)}
-.b-inf{color:var(--mut)}.b-spawn{color:var(--violet)}
-.acts{margin-top:9px;display:flex;gap:7px;flex-wrap:wrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--red);flex:none}
+.dot.on{background:var(--moss);box-shadow:0 0 0 0 rgba(79,208,138,.6);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 7px rgba(79,208,138,0)}100%{box-shadow:0 0 0 0 rgba(79,208,138,0)}}
+.ctrls{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.seg{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:2px}
+.seg button{border:0;background:transparent;padding:4px 11px;border-radius:8px;font-size:12.5px;color:var(--mut)}
+.seg button.on{background:var(--panel);color:var(--ink);box-shadow:var(--shadow)}
+.tg{font:inherit;font-size:12px;padding:4px 10px;border-radius:20px;cursor:pointer;
+ background:var(--panel2);color:var(--mut);border:1px solid var(--line)}
+.tg.on{background:var(--panel);color:var(--ink);border-color:var(--blue)}
+.icon{font:inherit;background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:9px;
+ width:32px;height:30px;padding:0;display:inline-grid;place-items:center;cursor:pointer}
+main{padding:14px 12px 80px;max-width:1240px;margin:0 auto}
 button{font:inherit;font-size:13px;padding:6px 12px;border-radius:8px;cursor:pointer;
- background:#1e2530;color:var(--ink);border:1px solid var(--line)}
-button:hover{background:#26303d}
-button.danger{color:var(--red);border-color:#4a2626}
-input[type=text],input[type=password],input.masked{flex:1;min-width:140px;font:inherit;font-size:13px;padding:6px 10px;
- border-radius:8px;background:#10151c;color:var(--ink);border:1px solid var(--line)}
-/* ── org chart: departments are COLUMNS, units stack DOWNWARDS ──
-   Die alte Form legte alle ~22 Einheiten einer Ebene nebeneinander → gut
-   5000 px breit, keine 400 px hoch. Jetzt begrenzt das Grid die Breite auf
-   die Zahl der Abteilungen und die Tiefe waechst nach unten. */
+ background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+button:hover{filter:brightness(1.08)}
+button.danger{color:var(--red)}
+input[type=text],input[type=password],input.masked{flex:1;min-width:140px;font:inherit;font-size:13px;padding:7px 10px;
+ border-radius:8px;background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+
+/* needs-Florian strip */
+.need{background:var(--needbg);border:1px solid var(--needline);border-radius:12px;padding:10px 13px;margin-bottom:12px}
+.need.ok{background:var(--panel);border-color:var(--line)}
+.need h2{margin:0;font-size:13px;letter-spacing:.3px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.need h2 .cnt{background:var(--amber);color:#1b1305;border-radius:20px;padding:0 8px;font-size:12px}
+.need h2 .src{font-weight:400;color:var(--mut);font-size:11.5px}
+.need ol{margin:7px 0 0;padding-left:20px}
+.need li{margin:4px 0;font-size:13.5px}
+.need li .by{color:var(--mut);font-size:11.5px;margin-left:4px;white-space:nowrap}
+.need li .steps{margin:3px 0 0;padding-left:18px;color:var(--soft);font-size:12.5px}
+
+/* KPIs + filters */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin-bottom:12px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:8px 11px}
+.kpi b{display:block;font-size:19px;line-height:1.2}
+.kpi span{color:var(--mut);font-size:11.5px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 12px}
+.filters .lbl{color:var(--mut);font-size:11.5px;margin-right:2px}
+
+/* topics */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(520px,1fr));gap:12px;align-items:start}
+@media(max-width:1100px){.grid{grid-template-columns:1fr}}
+.topic{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.th2{padding:11px 13px 9px;border-bottom:1px solid var(--line)}
+.tt2{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tt2 h3{margin:0;font-size:15px}
+.pills{display:flex;gap:5px;flex-wrap:wrap}
+.pill{font-size:11px;border-radius:20px;padding:1px 8px;border:1px solid var(--line);color:var(--mut);white-space:nowrap}
+.pill.run{color:var(--moss);border-color:currentColor}.pill.wait{color:var(--amber);border-color:currentColor}
+.pill.bad{color:var(--red);border-color:currentColor}.pill.cost{color:var(--teal);border-color:currentColor}
+.owner{color:var(--soft);font-size:12.5px;margin-top:4px}
+.owner b{color:var(--ink);font-weight:600}
+.last{margin-top:6px;font-size:12.5px;color:var(--soft);display:flex;gap:6px;align-items:baseline}
+.last .snip{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.jobs{padding:4px 0}
+.job{border-top:1px solid var(--line)}
+.job:first-child{border-top:0}
+.jrow{display:flex;align-items:center;gap:8px;padding:8px 13px;cursor:pointer;min-height:40px}
+.jrow:hover{background:var(--panel2)}
+.child .jrow{padding-left:34px}
+.child .jrow::before{content:"↳";color:var(--mut);margin-right:-2px}
+.st{width:9px;height:9px;border-radius:50%;flex:none;background:var(--mut)}
+.st.running{background:var(--moss);box-shadow:0 0 0 3px rgba(79,208,138,.18)}
+.st.waiting{background:var(--amber);box-shadow:0 0 0 3px rgba(242,169,59,.18)}
+.st.blocked,.st.failed{background:var(--red)}
+.st.done{background:var(--blue);opacity:.65}
+.st.stopped{background:var(--mut);opacity:.6}
+.jn{font-weight:600;font-size:13.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jmeta{color:var(--mut);font-size:12px;white-space:nowrap;display:flex;gap:8px;align-items:center;margin-left:auto}
+.eng{font-size:10.5px;font-weight:700;letter-spacing:.3px;padding:1px 7px;border-radius:6px;border:1px solid currentColor;
+ text-transform:uppercase;flex:none}
+.eng.codex{color:var(--codex)}.eng.claude{color:var(--claude)}.eng.devin{color:var(--devin)}
+.eng.opencode{color:var(--opencode)}.eng.script,.eng.unknown{color:var(--script)}.eng.hermes{color:var(--hermes)}
+.subs{font-size:11px;color:var(--violet)}
+.par{font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px}
+.jd{padding:2px 13px 12px 30px;font-size:12.5px;color:var(--soft)}
+.child .jd{padding-left:51px}
+.jd .ttl{color:var(--ink);font-size:13px;margin-bottom:6px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:6px 0}
+.kv dt{color:var(--mut)}.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.tree{margin:8px 0 4px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);padding:6px 8px;overflow-x:auto}
+.pr{display:flex;gap:7px;align-items:baseline;white-space:nowrap;font-size:12px;padding:1px 0}
+.pr .k{font-size:10px;font-weight:700;letter-spacing:.3px;border-radius:5px;padding:0 5px;border:1px solid currentColor}
+.pr .k.agent{color:var(--moss)}.pr .k.subagent{color:var(--violet)}.pr .k.wait{color:var(--amber)}.pr .k.tool{color:var(--mut)}
+.pr .m{color:var(--mut)}
+.links{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.links a,.links button{font-size:12px;padding:3px 9px;border:1px solid var(--line);border-radius:7px;background:var(--panel)}
+.more{display:block;width:100%;text-align:left;border:0;border-top:1px solid var(--line);border-radius:0;background:transparent;
+ color:var(--mut);font-size:12.5px;padding:8px 13px}
+.standing{border-top:1px solid var(--line);padding:8px 13px 10px;display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.standing .lbl{color:var(--mut);font-size:11.5px;margin-right:2px}
+.chip{font-size:11px;padding:1px 7px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);color:var(--soft);white-space:nowrap}
+.chip.running{color:var(--moss)}.chip.failed{color:var(--red);border-color:currentColor}
+.empty{color:var(--mut);font-size:13px;padding:12px 13px}
+.foot{color:var(--mut);font-size:11.5px;margin-top:16px;line-height:1.6}
+
+/* viewer + terminal */
+#viewer{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center}
+#viewer .box{background:var(--panel);width:min(980px,100%);height:min(86vh,100%);border-radius:14px 14px 0 0;display:flex;flex-direction:column;border:1px solid var(--line)}
+@media(min-width:700px){#viewer{align-items:center}#viewer .box{border-radius:14px}}
+#viewer .vh{display:flex;gap:8px;align-items:center;padding:10px 13px;border-bottom:1px solid var(--line)}
+#viewer pre{flex:1;margin:0;padding:12px 14px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:12.5px/1.5 ui-monospace,Menlo,Consolas,monospace}
+
+/* classic views */
+.dept{margin:20px 0 9px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);border-bottom:1px solid var(--line);padding-bottom:5px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:8px}
+.card.sub{margin-left:20px;border-left:3px solid var(--line)}
+.row{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.name{font-weight:650}.role{color:var(--mut);font-size:13px}.desc{color:var(--soft);font-size:13px;margin-top:5px}
+.meta{color:var(--mut);font-size:12px;margin-top:6px;display:flex;gap:12px;flex-wrap:wrap}
+.badge{font-size:10.5px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:20px;border:1px solid currentColor;white-space:nowrap}
+.b-live{color:var(--moss)}.b-cron{color:var(--amber)}.b-sub{color:var(--blue)}.b-inf{color:var(--mut)}.b-spawn{color:var(--violet)}
+.acts{margin-top:9px;display:flex;gap:7px;flex-wrap:wrap}
 #chart{overflow-x:auto;padding:8px 2px 24px}
-.tree{display:flex;flex-direction:column;align-items:center}
-.node{background:var(--panel);border:1px solid var(--line);border-radius:10px;
- padding:8px 10px;text-align:center;position:relative;overflow-wrap:anywhere}
-.node .nt{font-weight:650;font-size:13px;line-height:1.3}
-.node .nr{color:var(--mut);font-size:11.5px;margin-top:2px;line-height:1.3}
+#chart .tree{display:flex;flex-direction:column;align-items:center;border:0;background:transparent;margin:0;padding:0}
+.node{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;text-align:center;position:relative;overflow-wrap:anywhere}
+.node .nt{font-weight:650;font-size:13px;line-height:1.3}.node .nr{color:var(--mut);font-size:11.5px;margin-top:2px;line-height:1.3}
 .node .nb{margin-top:5px;display:flex;gap:4px;justify-content:center;flex-wrap:wrap}
-/* Badges duerfen im Diagramm umbrechen – mit nowrap ragten lange wie
-   "SPAWNS · few · via opencode/codex" seitlich aus dem Kasten heraus. */
-.node .badge{white-space:normal;font-size:9.5px;padding:1.5px 6px;max-width:100%;
- border-radius:5px;line-height:1.35}
-.node.root{border-color:#3c4a5e;background:#1a222d}
+.node .badge{white-space:normal;font-size:9.5px;padding:1.5px 6px;max-width:100%;border-radius:5px;line-height:1.35}
+.node.root{border-color:var(--blue);background:var(--panel2)}
 .vline{width:2px;height:16px;background:var(--line)}
-.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(184px,1fr));
- width:100%;align-items:start;column-gap:0;row-gap:26px;margin-top:14px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(184px,1fr));width:100%;align-items:start;column-gap:0;row-gap:26px;margin-top:14px}
 .col{position:relative;padding:0 6px;min-width:0}
 .col::before{content:"";position:absolute;top:-14px;left:50%;width:2px;height:14px;background:var(--line)}
 .col::after{content:"";position:absolute;top:-14px;left:0;right:0;height:2px;background:var(--line)}
-.col.rowstart::after{left:50%}
-.col.rowend::after{right:50%}
-.col.alone::after{display:none}
-/* Umgebrochene Reihen haengen an keiner Sammelschiene – dann lieber gar
-   keine Linie als eine, die ins Leere zeigt. */
+.col.rowstart::after{left:50%}.col.rowend::after{right:50%}.col.alone::after{display:none}
 .col.norail::before,.col.norail::after{display:none}
 .chead .nt{font-size:12px;letter-spacing:.4px;text-transform:uppercase}
 @media(min-width:601px){.col>.node,.col>.stack{max-width:300px;margin-left:auto;margin-right:auto}}
-/* Verzeichnisbaum je Spalte: durchgehende Senkrechte + Stummel je Kasten. */
 .stack{position:relative;padding-left:8px;margin-top:12px}
 .stack::before{content:"";position:absolute;left:8px;top:-12px;width:2px;height:12px;background:var(--line)}
 .leaf{position:relative;padding:0 0 8px 14px}
 .leaf::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--line)}
 .leaf:last-child::before{bottom:auto;height:19px}
 .leaf::after{content:"";position:absolute;left:0;top:17px;width:14px;height:2px;background:var(--line)}
-.leaf .node{text-align:left}
-.leaf .node .nb{justify-content:flex-start}
-.leaf .stack{margin-top:8px}
-@media(max-width:600px){.card.sub{margin-left:11px}.node{font-size:12.5px}}
-.hostbox{border:1px dashed #3a4655;border-radius:14px;padding:10px 12px 4px;margin:14px 0}
-.hostbox>.hh{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--blue);
- margin:-2px 0 8px;font-weight:700}
-.hostbox.laptop{border-color:#4a3f5e}.hostbox.laptop>.hh{color:var(--violet)}
-#term{position:fixed;inset:auto 0 0 0;height:62vh;background:#0b0f14;border-top:1px solid var(--line);
- z-index:20;display:flex;flex-direction:column}
+.leaf .node{text-align:left}.leaf .node .nb{justify-content:flex-start}.leaf .stack{margin-top:8px}
+.hostbox{border:1px dashed var(--line);border-radius:14px;padding:10px 12px 4px;margin:14px 0}
+.hostbox>.hh{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--blue);margin:-2px 0 8px;font-weight:700}
+.hostbox.laptop>.hh{color:var(--violet)}
+#term{position:fixed;inset:auto 0 0 0;height:62vh;background:var(--termbg);border-top:1px solid var(--line);z-index:20;display:flex;flex-direction:column}
 #term .th{display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid var(--line)}
 #term .tt{font-weight:650;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #term .tsub{color:var(--mut);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media(max-width:520px){#term .tsub{display:none}}
-#term pre{flex:1;margin:0;padding:11px 13px;overflow:auto;font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;
- color:#c8d2de;white-space:pre-wrap;overflow-wrap:break-word}
+#term pre{flex:1;margin:0;padding:11px 13px;overflow:auto;font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;color:var(--soft);white-space:pre-wrap;overflow-wrap:break-word}
 #term .ti{display:flex;gap:7px;padding:9px 11px;border-top:1px solid var(--line)}
 #gate{padding:44px 18px;max-width:400px;margin:0 auto}
 #gate input{width:100%;margin:10px 0}
 #tok.masked{-webkit-text-security:disc;text-security:disc;letter-spacing:.12em}
 .err{color:var(--red);font-size:13px;margin-top:8px}
-.empty{color:var(--mut);font-size:13px;padding:10px 0}
+@media(max-width:600px){
+ header{padding:9px 11px 7px}main{padding:10px 8px 70px}
+ .kpis{grid-template-columns:repeat(3,1fr);gap:6px}.kpi{padding:5px 8px}.kpi b{font-size:16px}.kpi span{font-size:10.5px;line-height:1.25;display:block}
+ .filters{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;margin-left:-8px;margin-right:-8px;padding-left:8px;padding-right:8px;scrollbar-width:none}
+ .filters>*{flex:none}
+ h1 small{display:none}.seg button{padding:4px 8px;font-size:12px}#livetxt{display:none}.hrow{gap:7px}
+ .par{display:none}.jmeta .rt{display:none}.jrow{padding:9px 11px}.jd{padding-left:24px}
+ .card.sub{margin-left:11px}.node{font-size:12.5px}
+ .grid{gap:10px}
+}
 </style></head><body>
 <div id="gate" hidden>
-  <h1>Agent Org</h1>
-  <p style="color:#8b93a3;font-size:13px">Enter the access token. Stored in this browser only.</p>
+  <h1>Agents</h1>
+  <p style="color:var(--mut);font-size:13px">Enter the access token. Stored in this browser only.</p>
   <!-- Deliberately NOT type=password. Every Sandy PaaS app lives under
        mintapis.com, so Chrome's password manager treats a login saved for one
        app as a match for all the others and offers it in this gate. There is no
@@ -120,21 +202,36 @@ input[type=text],input[type=password],input.masked{flex:1;min-width:140px;font:i
   <div class="err" id="gerr"></div>
 </div>
 <div id="app" hidden>
-<header>
+<header><div class="hin">
   <div class="hrow">
-    <h1>Agent Org</h1>
+    <h1>Agents <small>by topic</small></h1>
     <span class="live"><span class="dot" id="dot"></span><span id="livetxt">connecting…</span></span>
+    <span class="sp"></span>
+    <div class="seg" role="tablist">
+      <button id="t-topics" onclick="setView('topics')">Topics</button>
+      <button id="t-chart" onclick="setView('chart')">Org chart</button>
+      <button id="t-list" onclick="setView('list')">List</button>
+    </div>
+    <button class="icon" id="themeBtn" onclick="toggleTheme()" title="Dark / light" aria-label="Toggle dark or light mode">◐</button>
   </div>
-  <div class="ctrls">
-    <button class="tg on" id="t-list" onclick="setView('list')">List</button>
-    <button class="tg" id="t-chart" onclick="setView('chart')">Org chart</button>
-    <button class="tg" id="t-sub" onclick="toggleSubs()">Show subagents</button>
+  <div class="ctrls" id="topicCtrls">
     <button class="tg" id="t-rt" onclick="toggleRT()">Live: on</button>
-    <button class="tg" id="t-host" onclick="toggleHosts()">System boundaries</button>
+    <span class="live" id="tstamp"></span>
   </div>
-  <div class="live" id="stamp" style="margin-top:7px"></div>
-</header>
-<main><div id="out"></div><div id="chart" hidden></div></main>
+  <div class="ctrls" id="classicCtrls" hidden>
+    <button class="tg" id="t-sub" onclick="toggleSubs()">Show subagents</button>
+    <button class="tg" id="t-host" onclick="toggleHosts()">System boundaries</button>
+    <span class="live" id="stamp"></span>
+  </div>
+</div></header>
+<main>
+  <div id="topics"></div>
+  <div id="out" hidden></div><div id="chart" hidden></div>
+</main>
+<div id="viewer" hidden onclick="if(event.target===this)closeViewer()">
+  <div class="box"><div class="vh"><b id="vtitle" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></b>
+    <button onclick="closeViewer()">Close</button></div><pre id="vbody">…</pre></div>
+</div>
 <div id="term" hidden>
   <div class="th"><span class="tt" id="tname"></span><span class="tsub" id="tsub"></span>
     <span style="flex:1"></span>
@@ -147,9 +244,197 @@ input[type=text],input[type=password],input.masked{flex:1;min-width:140px;font:i
 </div>
 </div>
 <script>
+let TV=null, TVTIMER=null;
+let SCOPE=localStorage.getItem("orgscope")||"active";
+let ENGF=localStorage.getItem("orgeng")||"";
+let PARF=localStorage.getItem("orgpar")||"";
+const OPEN=new Set(JSON.parse(localStorage.getItem("orgopen")||"[]"));
+const SHOWDONE=new Set();
+function applyTheme(){const t=localStorage.getItem("orgtheme")||(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark");
+  document.documentElement.dataset.theme=t;document.getElementById("themeBtn").textContent=t==="light"?"☾":"☀"}
+function toggleTheme(){const t=document.documentElement.dataset.theme==="light"?"dark":"light";localStorage.setItem("orgtheme",t);applyTheme()}
+const ENGINE_NAMES={codex:"Codex",claude:"Claude",devin:"Devin",opencode:"OpenCode",script:"script",hermes:"Hermes"};
+const PARENT_KINDS={laptop:"Claude Code (laptop)",remote:"Remote control",hermes:"Hermes",job:"Another job",timer:"Timer / cron"};
+function ago(ts){if(!ts)return"";const s=Date.now()/1000-(typeof ts==="string"?Date.parse(ts)/1000:ts);
+  if(s<90)return"just now";if(s<3600)return`${~~(s/60)} min ago`;if(s<86400)return`${~~(s/3600)} h ago`;return`${~~(s/86400)} d ago`}
+function hm(ts){return new Date(ts*1000).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}
+function fmtUsd(v){return v==null?"":"$"+(+v).toFixed(2)}
+async function loadTopics(){
+  try{const r=await fetch("/api/topics",{headers:{"X-Org-Token":TOKEN}});
+    if(r.status===401)throw new Error("401");
+    TV=await r.json();gateOff();setLive(RT,RT?"live · every 15 s":"paused");render()}
+  catch(e){if(String(e.message)==="401")gateOn();else setLive(false,"offline — retrying")}
+}
+function setScope(s){SCOPE=s;localStorage.setItem("orgscope",s);renderTopics()}
+function setEng(e){ENGF=ENGF===e?"":e;localStorage.setItem("orgeng",ENGF);renderTopics()}
+function setPar(p){PARF=PARF===p?"":p;localStorage.setItem("orgpar",PARF);renderTopics()}
+function toggleJob(id){OPEN.has(id)?OPEN.delete(id):OPEN.add(id);localStorage.setItem("orgopen",JSON.stringify([...OPEN].slice(-40)));renderTopics()}
+function toggleDone(k){SHOWDONE.has(k)?SHOWDONE.delete(k):SHOWDONE.add(k);renderTopics()}
+const ACTIVE=new Set(["running","waiting","blocked"]);
+function inScope(j){
+  const now=Date.now()/1000;
+  if(ENGF&&(j.engine||"unknown")!==ENGF)return false;
+  if(PARF&&(j.parent||{}).kind!==PARF)return false;
+  if(ACTIVE.has(j.status))return true;
+  if(SCOPE==="active")return (j.status==="failed"&&now-j.last_activity<12*3600)||now-j.last_activity<3*3600;
+  if(SCOPE==="today")return now-j.last_activity<24*3600;
+  return true;
+}
+function needStrip(nf){
+  const items=(nf&&nf.items)||[];
+  const when=nf&&nf.checked_at?hm(nf.checked_at):"";
+  if(!items.length)return `<div class="need ok"><h2>✅ Nothing needs you right now
+    <span class="src">checked against DECISIONS.md at ${when}${nf&&nf.dropped_as_resolved?` · ${nf.dropped_as_resolved} older item(s) already resolved`:""}</span></h2></div>`;
+  const li=items.slice(0,8).map(it=>{
+    const src=it.source&&TV.jobs[it.source]?`<a href="#" onclick="event.preventDefault();jumpTo('${esc(it.source)}')">${esc(it.source)}</a>`:esc(it.source||"");
+    const steps=(it.steps||[]).length?`<ol class="steps">${it.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol>`:"";
+    const why=it.why?`<div class="by" style="margin:0">${esc(it.why)}</div>`:"";
+    const link=it.url?` <a href="${esc(it.url)}" target="_blank" rel="noopener">board ↗</a>`:"";
+    return `<li>${esc(it.text)}${it.minutes?` <span class="by">~${esc(it.minutes)} min</span>`:""}
+      <span class="by">· ${src} · ${ago(it.at)}</span>${link}${why}${steps}</li>`}).join("");
+  return `<div class="need"><h2>🧑 Needs you <span class="cnt">${items.length}</span>
+    <span class="src">only open items · ${nf.dropped_as_resolved||0} dropped as already decided in DECISIONS.md · checked ${when}</span></h2><ol>${li}</ol></div>`;
+}
+function engBadge(e){const k=e||"unknown";return `<span class="eng ${esc(k)}">${esc(ENGINE_NAMES[k]||"?")}</span>`}
+function parentText(p){if(!p)return"";if(p.kind==="job")return"↖ "+p.name.replace(/-\d{8}$/,"");
+  return (p.kind==="pending"?"":"by ")+p.name}
+function procRows(j){
+  if(!j.procs||!j.procs.length)return"";
+  return `<div class="tree">${j.procs.map(r=>`<div class="pr" style="padding-left:${r.depth*16}px" title="${esc(r.cmd)}">
+    <span class="k ${r.kind}">${r.kind==="subagent"?"SUBAGENT":r.kind==="agent"?"AGENT":r.kind==="wait"?"WAITING":"TOOL"}</span>
+    <span>${esc(r.label)}${r.count>1?` ×${r.count}`:""}</span>
+    <span class="m">${dur(r.runtime_s)} · ${r.rss_mb} MB · pid ${r.pid}</span></div>`).join("")}</div>`;
+}
+function jobDetail(j){
+  const kv=[];
+  if(j.title)kv.push(["Task",esc(j.title)]);
+  const p=j.parent||{};
+  kv.push(["Started by",`${esc(p.name||"?")}${p.kind==="job"&&TV.jobs[p.job]?` <a href="#" onclick="event.preventDefault();jumpTo('${esc(p.job)}')">open</a>`:""}
+    <span style="color:var(--mut)"> — ${esc(p.evidence||"")}</span>`]);
+  kv.push(["Engine",`${esc(ENGINE_NAMES[j.engine]||j.engine||"unknown")}${j.model?` · ${esc(j.model)}`:""}${j.unit?` · unit <code>${esc(j.unit)}</code>`:""}`]);
+  kv.push(["Status",`${esc(j.status)}${j.reason?` — ${esc(j.reason)}`:""}`]);
+  if(j.started_at)kv.push(["Started",`${hm(j.started_at)} (${ago(j.started_at)})`]);
+  kv.push(["Last activity",ago(j.last_activity)]);
+  if(j.eta)kv.push(["ETA",j.eta.text?`${esc(j.eta.text)} <span style="color:var(--mut)">(${esc(j.eta.kind)})</span>`:
+    `${hm(j.eta.at)} <span style="color:var(--mut)">(${esc(j.eta.kind)})</span>`]);
+  if(j.cost){const c=j.cost;kv.push(["GPU cost",`${c.today_usd!=null?fmtUsd(c.today_usd)+" today":""}${(c.live_pods||[]).length?` · ${c.live_pods.length} live pod(s): `+
+    c.live_pods.map(p=>`${esc(p.provider)} ${fmtUsd(p.hourly_usd)}/h (cap ${fmtUsd(p.cap_usd)})`).join(", "):""}`])}
+  if(j.running)kv.push(["Processes",`${j.proc_count} · ${j.rss_mb} MB${j.subagents?` · ${j.subagents} subagent(s)`:""}`]);
+  if(j.board)kv.push(["Last board entry",`<a href="${esc(j.board.url)}" target="_blank" rel="noopener">#${j.board.id} ${esc(j.board.kind)}</a>
+    ${ago(j.board.created_at)} — ${esc(j.board.body.slice(0,220))}`]);
+  if((j.children||[]).length)kv.push(["Started jobs",j.children.map(c=>`<a href="#" onclick="event.preventDefault();jumpTo('${esc(c)}')">${esc(c)}</a>`).join(", ")]);
+  const links=Object.keys(j.files||{}).filter(f=>f!=="BOARD-INBOX.md"||j.files[f]>0)
+    .map(f=>`<button onclick="viewFile('${esc(j.id)}','${esc(f)}')">${esc(f)} <span style="color:var(--mut)">${kb(j.files[f])}</span></button>`);
+  if(j.board&&j.board.main_thread)links.push(`<a href="${esc(TV.board_url)}/#/thread/${j.board.main_thread}" target="_blank" rel="noopener">Board thread ↗</a>`);
+  return `<div class="jd">${j.title?"":""}<dl class="kv">${kv.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>
+    ${procRows(j)}<div class="links">${links.join("")}</div></div>`;
+}
+function kb(n){return n==null?"":n>1e6?(n/1e6).toFixed(1)+" MB":n>1e3?Math.round(n/1e3)+" kB":n+" B"}
+function jobRow(j,child){
+  const open=OPEN.has(j.id);
+  const rt=j.running?dur(Date.now()/1000-j.started_at):ago(j.last_activity);
+  return `<div class="job${child?" child":""}" id="job-${esc(j.id)}">
+    <div class="jrow" onclick="toggleJob('${esc(j.id)}')" title="${esc(j.title||j.id)}">
+      <span class="st ${j.status}" title="${esc(j.status)}${j.reason?": "+esc(j.reason):""}"></span>
+      <span class="jn">${esc(j.name)}</span>
+      ${j.subagents?`<span class="subs">+${j.subagents} sub</span>`:""}
+      <span class="jmeta"><span class="par">${esc(parentText(j.parent))}</span>
+        ${j.cost&&j.cost.today_usd?`<span style="color:var(--teal)">${fmtUsd(j.cost.today_usd)}</span>`:""}
+        <span class="rt">${rt}</span>${engBadge(j.engine)}</span>
+    </div>${open?jobDetail(j):""}</div>`;
+}
+function jobList(ids,seen){
+  let h="";
+  for(const id of ids){
+    if(seen.has(id))continue;seen.add(id);
+    const j=TV.jobs[id];h+=jobRow(j,false);
+    for(const c of (j.children||[])){const cj=TV.jobs[c];
+      if(cj&&cj.topic===j.topic&&!seen.has(c)&&inScope(cj)){seen.add(c);h+=jobRow(cj,true)}}
+  }
+  return h;
+}
+function topicCard(t){
+  const all=t.jobs.map(id=>TV.jobs[id]);
+  const vis=all.filter(inScope);
+  const active=vis.filter(j=>ACTIVE.has(j.status)||j.status==="failed");
+  const rest=vis.filter(j=>!(ACTIVE.has(j.status)||j.status==="failed"));
+  const c=t.counts;
+  const pills=[c.running?`<span class="pill run">● ${c.running} running</span>`:"",c.waiting?`<span class="pill wait">◐ ${c.waiting} waiting</span>`:"",
+    c.blocked?`<span class="pill bad">■ ${c.blocked} blocked</span>`:"",c.failed?`<span class="pill bad">✕ ${c.failed} failed</span>`:"",
+    `<span class="pill">${c.done} done</span>`,t.gpu_today_usd?`<span class="pill cost">GPU ${fmtUsd(t.gpu_today_usd)} today</span>`:""].join("");
+  const lap=(t.laptop_sessions||[]).map(s=>`<b>${esc(s.name)}</b> (laptop Claude, ${ago(s.last.created_at)})`).join(", ");
+  const owner=`Owner: <b>${esc(t.owner||"—")}</b>${lap?` · lead session ${lap}`:""}${t.threads.length?` · ${t.threads.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">#${x.id} ${esc(x.title.split(" (")[0])}</a>`).join(", ")}`:""}`;
+  const le=t.last_entry;
+  const last=le?`<div class="last"><a href="${esc(le.url)}" target="_blank" rel="noopener" style="flex:none">#${le.id}</a>
+    <span class="snip"><b style="color:var(--ink);font-weight:600">${esc(le.author.split(":").pop().replace(/-\d{8}$/,""))}</b> · ${ago(le.created_at)} — ${esc(le.body)}</span></div>`:"";
+  const seen=new Set();
+  let body=jobList(active.map(j=>j.id),seen);
+  const restIds=rest.map(j=>j.id).filter(id=>!seen.has(id));
+  if(restIds.length){
+    if(SHOWDONE.has(t.key)||!active.length&&restIds.length<=3)body+=jobList(restIds,seen);
+    else body+=`<button class="more" onclick="toggleDone('${t.key}')">▸ ${restIds.length} finished · show</button>`;
+  }
+  if(SHOWDONE.has(t.key)&&restIds.length>3)body+=`<button class="more" onclick="toggleDone('${t.key}')">▾ hide finished</button>`;
+  if(!body)body=`<div class="empty">No jobs in this view.</div>`;
+  const std=t.standing||[];
+  const stdH=std.length?`<div class="standing"><span class="lbl">Standing automation</span>${std
+    .sort((a,b)=>(b.state==="failed")-(a.state==="failed")||(b.state==="running")-(a.state==="running"))
+    .slice(0,SHOWDONE.has("std-"+t.key)?99:10).map(s=>`<span class="chip ${esc(s.state)}" title="${esc(s.type)} · ${esc(s.state)}">${s.state==="failed"?"✕ ":s.state==="running"?"● ":""}${esc(s.name)}</span>`).join("")}
+    ${std.length>10&&!SHOWDONE.has("std-"+t.key)?`<a href="#" onclick="event.preventDefault();toggleDone('std-${t.key}')" style="font-size:11.5px">+${std.length-10} more</a>`:""}</div>`:"";
+  return `<section class="topic" id="topic-${t.key}"><div class="th2"><div class="tt2"><h3>${esc(t.title)}</h3><div class="pills">${pills}</div></div>
+    <div class="owner">${owner}</div>${last}</div><div class="jobs">${body}</div>${stdH}</section>`;
+}
+function jumpTo(id){const j=TV.jobs[id];if(!j)return;OPEN.add(id);if(!inScope(j)){SCOPE="all";localStorage.setItem("orgscope","all")}
+  SHOWDONE.add(j.topic);ENGF="";PARF="";renderTopics();
+  const el=document.getElementById("job-"+id);if(el)el.scrollIntoView({behavior:"smooth",block:"center"})}
+async function viewFile(job,name){
+  document.getElementById("viewer").hidden=false;
+  document.getElementById("vtitle").textContent=`${job} / ${name}`;
+  const b=document.getElementById("vbody");b.textContent="loading…";
+  try{const r=await fetch(`/api/file?job=${encodeURIComponent(job)}&name=${encodeURIComponent(name)}`,{headers:{"X-Org-Token":TOKEN}});
+    b.textContent=r.ok?await r.text():`Could not load (${r.status}).`;b.scrollTop=name==="PROMPT.md"?0:b.scrollHeight}
+  catch(e){b.textContent="Could not load."}
+}
+function closeViewer(){document.getElementById("viewer").hidden=true}
+addEventListener("keydown",e=>{if(e.key==="Escape")closeViewer()});
+function renderTopics(){
+  const el=document.getElementById("topics");
+  if(!TV){el.innerHTML=`<div class="empty">Loading…</div>`;return}
+  const jobs=Object.values(TV.jobs);
+  const run=jobs.filter(j=>j.status==="running"), wait=jobs.filter(j=>j.status==="waiting");
+  const failed=jobs.filter(j=>(j.status==="failed"||j.status==="blocked")&&Date.now()/1000-j.last_activity<86400);
+  const subs=jobs.reduce((a,j)=>a+(j.subagents||0),0);
+  const kpis=`<div class="kpis">
+    <div class="kpi"><b style="color:var(--moss)">${run.length}</b><span>running jobs</span></div>
+    <div class="kpi"><b style="color:var(--amber)">${wait.length}</b><span>waiting</span></div>
+    <div class="kpi"><b style="color:var(--red)">${failed.length}</b><span>failed / blocked · 24 h</span></div>
+    <div class="kpi"><b style="color:var(--violet)">${subs}</b><span>subagents live</span></div>
+    <div class="kpi"><b style="color:var(--teal)">${TV.gpu&&TV.gpu.today_usd!=null?fmtUsd(TV.gpu.today_usd):"—"}</b><span>GPU spend today (UTC)</span></div>
+    <div class="kpi"><b>${jobs.filter(j=>Date.now()/1000-j.last_activity<86400).length}</b><span>jobs active · 24 h</span></div></div>`;
+  const engCounts={};for(const j of jobs.filter(inScopeNoEng))engCounts[j.engine||"unknown"]=(engCounts[j.engine||"unknown"]||0)+1;
+  const parCounts={};for(const j of jobs.filter(inScopeNoPar)){const k=(j.parent||{}).kind;if(PARENT_KINDS[k])parCounts[k]=(parCounts[k]||0)+1}
+  const filters=`<div class="filters"><div class="seg">${[["active","Active"],["today","24 h"],["all","3 days"]].map(([k,l])=>
+      `<button class="${SCOPE===k?"on":""}" onclick="setScope('${k}')">${l}</button>`).join("")}</div>
+    <span class="lbl" style="margin-left:6px">Engine</span>${Object.entries(engCounts).sort((a,b)=>b[1]-a[1]).map(([e,n])=>
+      `<button class="tg ${ENGF===e?"on":""}" onclick="setEng('${esc(e)}')">${esc(ENGINE_NAMES[e]||"unknown")} ${n}</button>`).join("")}
+    <span class="lbl" style="margin-left:6px">Started by</span>${Object.entries(parCounts).sort((a,b)=>b[1]-a[1]).map(([k,n])=>
+      `<button class="tg ${PARF===k?"on":""}" onclick="setPar('${k}')">${esc(PARENT_KINDS[k])} ${n}</button>`).join("")}</div>`;
+  const order=[...TV.topics].sort((a,b)=>score(b)-score(a));
+  el.innerHTML=needStrip(TV.needs_florian)+kpis+filters+`<div class="grid">${order.map(topicCard).join("")}</div>`+
+    `<div class="foot">Measured live from the process table, systemd user units, <code>~/jobs</code>, the agent board, the GPU ledger and the notify log — nothing here is maintained by hand.
+     “Started by” comes from a <code>LAUNCHED-BY</code> file or <code>AGENT_PARENT</code> in the unit if present, else from process ancestry or a <code>systemd-run</code> line in another job's or Hermes' logs; jobs with no launch record on Sandy were started from the laptop over SSH.
+     Needs-you items: ${esc(TV.needs_florian.source||"")}. Generated ${hm(TV.generated_at)}.</div>`;
+  document.getElementById("tstamp").textContent=`${run.length} running · ${wait.length} waiting · updated ${hm(TV.generated_at)}`;
+}
+function score(t){const c=t.counts;return (c.running+c.waiting)*10+(c.failed+c.blocked)*3+(t.key==="other"?-100:0)+Math.min(c.done,5)*.1}
+function inScopeNoEng(j){const e=ENGF;ENGF="";const r=inScope(j);ENGF=e;return r}
+function inScopeNoPar(j){const p=PARF;PARF="";const r=inScope(j);PARF=p;return r}
+</script>
+<script>
+
 const DEPTS=["Leadership","Production","Distribution","Research","Security","Operations","Unassigned"];
 let TOKEN=localStorage.getItem("orgtok")||"", DATA=null, ES=null;
-let VIEW=localStorage.getItem("orgview")||"list";
+let VIEW=localStorage.getItem("orgview2")||"topics";
 let HOSTS=localStorage.getItem("orghosts")==="1";
 let TERM=null, TERMTIMER=null;
 let SUBS=localStorage.getItem("orgsubs")==="1";
@@ -166,10 +451,11 @@ function dur(s){if(s==null)return"?";const d=~~(s/86400),h=~~(s%86400/3600),m=~~
   t.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();saveTok();}});})();
 function saveTok(){TOKEN=document.getElementById("tok").value.trim();
   localStorage.setItem("orgtok",TOKEN);connect()}
-function setView(v){VIEW=v;localStorage.setItem("orgview",v);
-  document.getElementById("t-list").classList.toggle("on",v==="list");
-  document.getElementById("t-chart").classList.toggle("on",v==="chart");
-  render()}
+function setView(v){const prev=VIEW;VIEW=v;localStorage.setItem("orgview2",v);
+  for(const k of ["topics","list","chart"])document.getElementById("t-"+k).classList.toggle("on",v===k);
+  document.getElementById("classicCtrls").hidden=(v==="topics");
+  document.getElementById("topicCtrls").hidden=(v!=="topics");
+  if((prev==="topics")!==(v==="topics")||!DATA&&!TV)connect();else render()}
 function toggleSubs(){SUBS=!SUBS;localStorage.setItem("orgsubs",SUBS?"1":"0");
   document.getElementById("t-sub").classList.toggle("on",SUBS);
   document.getElementById("t-sub").textContent=SUBS?"Hide subagents":"Show subagents";render()}
@@ -219,13 +505,15 @@ async function termSend(){
 function toggleRT(){RT=!RT;localStorage.setItem("orgrt",RT?"1":"0");
   document.getElementById("t-rt").textContent="Live: "+(RT?"on":"off");
   document.getElementById("t-rt").classList.toggle("on",RT);
-  if(RT)connect();else{if(ES){ES.close();ES=null}setLive(false,"paused")}}
+  if(RT)connect();else{if(ES){ES.close();ES=null}if(TVTIMER){clearInterval(TVTIMER);TVTIMER=null}setLive(false,"paused")}}
 
 function setLive(on,txt){document.getElementById("dot").classList.toggle("on",on);
   document.getElementById("livetxt").textContent=txt}
 
 function connect(){
   if(ES){ES.close();ES=null}
+  if(TVTIMER){clearInterval(TVTIMER);TVTIMER=null}
+  if(VIEW==="topics"){loadTopics();if(RT)TVTIMER=setInterval(loadTopics,15000);return}
   if(!RT){pollOnce();return}
   ES=new EventSource("/api/stream?t="+encodeURIComponent(TOKEN));
   ES.onopen=()=>setLive(true,"live");
@@ -421,6 +709,8 @@ function busify(){
 }
 addEventListener("resize",()=>{if(VIEW==="chart")busify()});
 function render(){
+  document.getElementById("topics").hidden=(VIEW!=="topics");
+  if(VIEW==="topics"){document.getElementById("out").hidden=true;document.getElementById("chart").hidden=true;renderTopics();return}
   if(!DATA)return;
   document.getElementById("out").hidden=(VIEW!=="list");
   document.getElementById("chart").hidden=(VIEW!=="chart");
@@ -446,5 +736,5 @@ document.getElementById("t-sub").classList.toggle("on",SUBS);
 document.getElementById("t-rt").textContent="Live: "+(RT?"on":"off");
 document.getElementById("t-rt").classList.toggle("on",RT);
 document.getElementById("t-host").classList.toggle("on",HOSTS);
-setView(VIEW);connect();
+applyTheme();setView(VIEW);
 </script></body></html>
