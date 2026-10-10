@@ -4,6 +4,7 @@ Synthetic fixtures in a temp dir only: no real jobs, no Sandy state.
 Run: python3 -m unittest discover -s tests -v
 """
 import json, os, sys, tempfile, time, unittest
+from unittest.mock import patch
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
@@ -135,6 +136,50 @@ class PointerValidation(Fixture):
             fh.truncate(topics.CODEX_RECENT_MAX + 1)
         self.assertIsNone(topics.codex_current_tail(ptr))           # over 2 MiB
         self.assertIsNone(topics.codex_current_tail(None))
+
+    def test_null_and_bool_schema_refused(self):
+        j = self.job("j-20260101")
+        a = self.attempt(j)
+        self.pointer(j, a, schema=True)
+        self.assertIsNone(topics.codex_pointer(j))
+        self.pointer(j, str(a) + "\0")
+        self.assertIsNone(topics.codex_pointer(j))
+
+    def test_attempt_replaced_before_tail_open(self):
+        j = self.job("j-20260101")
+        a = self.attempt(j)
+        self.pointer(j, a)
+        ptr = topics.codex_pointer(j)
+        a.rename(j / "retained")
+        a.symlink_to(self.outside, target_is_directory=True)
+        (self.outside / "recent.log").write_text("outside")
+        self.assertIsNone(topics.codex_current_tail(ptr, read=True))
+
+    def test_tail_replaced_before_open(self):
+        j = self.job("j-20260101")
+        a = self.attempt(j)
+        self.pointer(j, a)
+        ptr = topics.codex_pointer(j)
+        (a / "recent.log").unlink()
+        (self.outside / "secret").write_text("outside")
+        (a / "recent.log").symlink_to(self.outside / "secret")
+        self.assertIsNone(topics.codex_current_tail(ptr, read=True))
+
+    def test_replaced_tail_after_open_reads_pinned_inode(self):
+        j = self.job("j-20260101")
+        a = self.attempt(j, recent="original\n")
+        self.pointer(j, a)
+        ptr = topics.codex_pointer(j)
+        real_open = topics.os.open
+        def race(path, flags, *args, **kwargs):
+            fd = real_open(path, flags, *args, **kwargs)
+            if path == "recent.log":
+                (a / "recent.log").unlink()
+                (self.outside / "secret").write_text("outside")
+                (a / "recent.log").symlink_to(self.outside / "secret")
+            return fd
+        with patch.object(topics.os, "open", side_effect=race):
+            self.assertEqual(topics.codex_current_tail(ptr, read=True)[2], b"original\n")
 
 
 class ScanAndEngine(Fixture):
