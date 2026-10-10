@@ -15,7 +15,7 @@ Measured, not maintained (same principle as collect.py):
 
 Everything expensive is cached; parent lookups are cached forever per job.
 """
-import json, os, re, sqlite3, subprocess, threading, time
+import json, os, re, sqlite3, stat, subprocess, threading, time
 from pathlib import Path
 
 HOME = Path("/home/flori")
@@ -333,6 +333,65 @@ def first_heading(path):
         pass
     return ""
 
+# A newer Codex runner keeps legacy logs untouched and writes the current attempt into
+# <job>/.codex-attempt-XXXXXX/ (gzip segments + a bounded plain recent.log), announced by an
+# atomic <job>/.codex-current-output.json. Only the plain recent.log is ever read here.
+CODEX_POINTER = ".codex-current-output.json"
+CODEX_POINTER_MAX = 16 * 1024
+CODEX_RECENT_MAX = 2 * 1024 * 1024
+
+def codex_pointer(jobdir):
+    """(attempt_dir, recent_log) from a valid schema-1 pointer, else None.
+
+    Valid means: an ordinary small JSON file, attempt_dir a real (non-symlink) directory that is a
+    direct child of the canonical job dir named .codex-attempt-*, recent_log exactly <attempt>/recent.log.
+    Paths may be absolute or relative to the job dir; nothing outside the job is ever opened.
+    """
+    try:
+        job = os.path.realpath(jobdir)
+        fd = os.open(os.path.join(job, CODEX_POINTER), os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        try:
+            st = os.fstat(fd)
+            if not stat.S_ISREG(st.st_mode) or st.st_size > CODEX_POINTER_MAX:
+                return None
+            raw = os.read(fd, CODEX_POINTER_MAX + 1)
+        finally:
+            os.close(fd)
+        if len(raw) > CODEX_POINTER_MAX:
+            return None
+        doc = json.loads(raw.decode("utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(doc, dict) or doc.get("schema") != 1:
+        return None
+    attempt, recent = doc.get("attempt_dir"), doc.get("recent_log")
+    if not isinstance(attempt, str) or not isinstance(recent, str):
+        return None
+    attempt = os.path.join(job, attempt)                  # an absolute value replaces job
+    base = os.path.basename(attempt)
+    if os.path.dirname(attempt) != job or not base.startswith(".codex-attempt-") or base == ".codex-attempt-":
+        return None
+    if os.path.join(job, recent) != os.path.join(attempt, "recent.log"):
+        return None
+    try:
+        if not stat.S_ISDIR(os.lstat(attempt).st_mode):   # lstat: a symlinked attempt dir is refused
+            return None
+    except OSError:
+        return None
+    return attempt, os.path.join(attempt, "recent.log")
+
+def codex_current_tail(ptr):
+    """(path, stat) of the pointer's recent.log if it is an ordinary file of at most 2 MiB, else None."""
+    if not ptr:
+        return None
+    try:
+        st = os.lstat(ptr[1])
+    except OSError:
+        return None
+    if not stat.S_ISREG(st.st_mode) or st.st_size > CODEX_RECENT_MAX:
+        return None
+    return ptr[1], st
+
 def scan_jobs(running, extra=()):
     now = time.time()
     out = {}
@@ -355,8 +414,12 @@ def scan_jobs(running, extra=()):
                 dated = time.mktime(time.strptime(m.group(1), "%Y%m%d"))
             except Exception:
                 pass
+        tail = None
         if name not in running and name not in extra and dm < now - RECENT_S and dated < now - RECENT_S:
-            continue
+            # output in a .codex-attempt-* subdir does not touch the job dir's mtime
+            tail = codex_current_tail(codex_pointer(d.path))
+            if not tail or tail[1].st_mtime < now - RECENT_S:
+                continue
         files, last = {}, 0
         try:
             for f in os.scandir(d.path):
@@ -365,10 +428,18 @@ def scan_jobs(running, extra=()):
                     if f.name != "BOARD-INBOX.md":      # the board appends here even after a job ended
                         last = max(last, st.st_mtime)
                     if f.name in ("PROMPT.md", "OUTPUT.md", "RESULT.md", "session.log", ".codex-attempt.log",
-                                  ".devin-attempt.log", "BOARD-INBOX.md", "LAUNCHED-BY", "STATUS.md"):
+                                  ".devin-attempt.log", "BOARD-INBOX.md", "LAUNCHED-BY", "STATUS.md", CODEX_POINTER):
                         files[f.name] = st.st_size
         except OSError:
             pass
+        if CODEX_POINTER in files:
+            ptr = codex_pointer(d.path)
+            if ptr is None:
+                del files[CODEX_POINTER]          # malformed/escaping pointer: legacy view only
+            else:
+                tail = tail or codex_current_tail(ptr)
+                if tail:
+                    last = max(last, tail[1].st_mtime)
         last = last or dm
         if name not in running and last < now - RECENT_S:
             continue
@@ -380,7 +451,7 @@ def scan_jobs(running, extra=()):
 def engine_from_files(name, files):
     if ".devin-attempt.log" in files:
         return "devin"
-    if ".codex-attempt.log" in files:
+    if ".codex-attempt.log" in files or CODEX_POINTER in files:   # scan_jobs keeps only a valid pointer
         return "codex"
     if (HOME / ".claude/projects" / ("-home-flori-jobs-" + name)).exists():
         return "claude"
@@ -492,19 +563,24 @@ def search_parents(jobs):
             pth = d / f
             if pth.exists():
                 logs.setdefault(d.name, []).append((str(pth), pth.stat().st_mtime))
+        tail = codex_current_tail(codex_pointer(d))      # plain current tail only, never the gzip segments
+        if tail and tail[1].st_size:
+            logs.setdefault(d.name, []).append((tail[0], tail[1].st_mtime))
     for name, j in todo[:60]:
         start = born.get(name) or j.get("started_at") or j.get("last_activity") or now
         unit = (j.get("unit") or re.sub(r"-\d{8}(T\d{4}Z)?$", "", name)).split(":")[-1].rsplit(".service", 1)[0]
-        cands = [pth for jn, L in logs.items() if jn != name and born.get(jn, now) <= start + 60
-                 for pth, mt in L if mt >= start - 60]
+        owner = {pth: jn for jn, L in logs.items() if jn != name and born.get(jn, now) <= start + 60
+                 for pth, mt in L if mt >= start - 60}
+        cands = list(owner)
         found = None
         if cands:
             rx = (r"systemd-run[^\n]{0,600}?(--unit[ =]" + re.escape(unit) + r"(\.service)?[\s\"']|--unit[ =]"
                   + re.escape(name) + r"[\s\"']|jobs/" + re.escape(name) + r"[\s/\"'>])")
             hits = [h for h in sh(["rg", "-l", "--max-filesize", "80M", "-e", rx, *cands], timeout=30).split() if h]
             if hits:
-                jn = Path(hits[0]).parent.name
-                found = {"kind": "job", "name": jn, "job": jn, "evidence": f"systemd-run launch line in {jn}/{Path(hits[0]).name}"}
+                jn = owner.get(hits[0]) or Path(hits[0]).parent.name
+                rel = os.path.relpath(hits[0], JOBS / jn) if hits[0] in owner else Path(hits[0]).name
+                found = {"kind": "job", "name": jn, "job": jn, "evidence": f"systemd-run launch line in {jn}/{rel}"}
         if not found:
             try:
                 con = sqlite3.connect(f"file:{HOME}/.hermes/state.db?mode=ro", uri=True, timeout=3)
