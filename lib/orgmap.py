@@ -7,7 +7,7 @@ functions (security guards, watchdogs, messaging, coordination, backups) that se
 Like the rest of the app it is measured, not maintained: jobs come from topics.collect_topics,
 workers from <job>/workers/<slice>/, standing automation from systemd on Sandy and LeChonk, live
 apps from the Coolify labels on sandy-prod. Only the team and guard catalogues below are rules.
-Names only — no prompts, environment or secrets leave this module.
+Names, short job titles and states only — no prompt bodies, board messages, environment or secrets.
 """
 import json, os, re, shutil, subprocess, threading, time
 from pathlib import Path
@@ -35,15 +35,15 @@ TEAMS = [
      r"s1m|system1|decisionmodel|decision-model|decisions-bench|^dmh|^dm-|llm-router|auto-router|mine-eu|antseed|"
      r"jev-router|whichmodel|msft-decision|^decision"),
     ("mkt", "Marketing, Ads & X", "📣", "X accounts (Harold, bots), ads, SEO, launches, outreach",
-     r"xbot|harold|^x-|-x-|ads-|-ads|launch|seo|marketing|outreach|interview|bookmark|explainer|newsletter|"
+     r"xbot|harold|^x-|-x-|(^|-)ads(-|$)|launch|seo|marketing|outreach|interview|bookmark|explainer|newsletter|"
      r"social|leadgen|directory|followups|discord|community"),
     ("bench", "JevBench & Benchmark Heaven", "📊", "Benchmarks, measurements, releases, the BH site",
-     r"jev|bench|^bh-|-bh-|benchmark|fastlane|uc11|imagejev|model-market|priority|leaderboard|eval"),
+     r"jev|bench|^bh-|-bh-|benchmark|fastlane|uc11|imagejev|model-market|priority|leaderboard|(^|-)eval"),
     ("products", "Products & portfolio", "🧩", "Mint apps, BookHost, Postial and smaller sites",
-     r"mint|bookhost|postial|portfolio|sale|h3-studio|hautarzt|philosophen|prompt-theater|ai-slop|who-is-right|"
+     r"mint|bookhost|postial|portfolio|(^|-)sale(-|$)|h3-studio|hautarzt|philosophen|prompt-theater|ai-slop|who-is-right|"
      r"live-fact|agent-as-a-service|mailposture|gpuserverhub|tag-janitor|domain"),
     ("infra", "Infra & servers", "🛠", "Sandy, LeChonk, sandy-prod, GPUs, disks, agent tooling",
-     r"urgent-autofix|umami|lechonk|sandy|disk|gpu|migration|backup|fleet|home-?browser|proxy|prod|agent|hermes|codex|claude|devin|"
+     r"urgent-autofix|umami|lechonk|sandy|disk|gpu|migration|backup|fleet|home-?browser|proxy|(^|-)prod(-|$|\d|uction)|agent|hermes|codex|claude|devin|"
      r"opencode|job|llm|mail|cadvisor|coolify|storagebox|session|continuity|tailscale|postgres|pgbouncer|quota|"
      r"router|worker|lane|cloud|pod|vllm|model|server|infra"),
 ]
@@ -153,8 +153,9 @@ def engine_badge(text, fallback=None):
         k = "haiku"
     elif "codex" in t or m:
         k = "codex"
-        detail = "Sol" if "sol" in t else "Luna" if "luna" in t else "Astra" if "astra" in t else (m.group(0) if m else "")
-    elif any(w in t for w in ("opencode", "kimi", "glm", "deepseek", "mimo", "bunny", "free", "cheap")):
+        detail = ("Sol" if re.search(r"\bsol\b|-sol\b", t) else "Luna" if "luna" in t else "Astra" if "astra" in t
+                  else (m.group(0) if m else ""))
+    elif re.search(r"\b(opencode|kimi|glm|deepseek|mimo|bunny)\b", t):
         k = "opencode"
     else:
         k = {"claude": "claude", "codex": "codex", "devin": "devin", "opencode": "opencode",
@@ -235,33 +236,39 @@ def prod_apps():
     """Coolify app names on sandy-prod with their health (read-only docker ps, cached 5 min)."""
     if _PROD["data"] is not None and time.time() - _PROD["t"] < PROD_TTL:
         return _PROD["data"]
-    raw = sh([str(HOME / "bin/sandy-prod-docker"), "ps", "-a", "--format",
-              '{{.Label "coolify.resourceName"}}|{{.Names}}|{{.State}}|{{.Status}}'], timeout=20)
+    try:
+        r = subprocess.run([str(HOME / "bin/sandy-prod-docker"), "ps", "-a", "--format",
+                            '{{.Label "coolify.resourceName"}}|{{.Names}}|{{.State}}|{{.Status}}'],
+                           capture_output=True, text=True, timeout=20, env=ENV)
+        raw, ok = r.stdout, r.returncode == 0
+    except Exception:
+        raw, ok = "", False
     apps = {}
     for line in raw.splitlines():
         name, cname, state, status = (line.split("|") + ["", "", "", ""])[:4]
         name = name or cname
         if not name or re.fullmatch(r"[a-z0-9]{24}(-\d+)?", name) or name in ("coolify-proxy",):
             continue
-        st = ("failed" if state in ("exited", "dead") or "unhealthy" in status else
+        st = ("failed" if state in ("dead", "restarting") or "unhealthy" in status
+              or (state == "exited" and not status.startswith("Exited (0)")) else
               "running" if state == "running" else "stopped")
         prev = apps.get(name)
         if not prev or prev["state"] != "running":
             apps[name] = {"name": name, "state": st, "host": "prod"}
-    data = {"reachable": bool(raw.strip()), "apps": sorted(apps.values(), key=lambda a: a["name"])}
-    _PROD.update(t=time.time(), data=data)
+    data = {"reachable": ok, "apps": sorted(apps.values(), key=lambda a: a["name"])}
+    _PROD.update(t=time.time() - (0 if ok else PROD_TTL - 30), data=data)
     return data
 
 def unit_state(u, units):
     """running / ok / failed / stopped for a service or a timer (judged by its service's last run)."""
     if u["unit"].endswith(".timer"):
         svc = units.get(u["unit"][:-6] + ".service") or {}
-        if svc.get("active") == "failed":
+        if svc.get("active") == "failed" or svc.get("sub") == "auto-restart":
             return "failed"
         if svc.get("active") in ("active", "activating"):
             return "running"
         return "ok" if u.get("active") == "active" else "stopped"
-    if u.get("active") == "failed":
+    if u.get("active") == "failed" or u.get("sub") == "auto-restart":
         return "failed"
     if u.get("active") in ("active", "activating", "reloading"):
         return "running"
@@ -274,7 +281,7 @@ def job_host(jobdir, lechonk_jobs=None):
         m = re.search(r"\bunit (\S+)", h)
         if lechonk_jobs is not None and m:
             return "lechonk", re.sub(r"\.service$", "", m.group(1)) in lechonk_jobs
-        return "lechonk", True
+        return "lechonk", None           # LeChonk unreachable: don't guess
     if "was lechonk" in h:
         return "lechonk", False
     return "sandy", None
@@ -298,7 +305,7 @@ def workers_of(jobdir, lead_host, lead_running):
         elif host == "lechonk" and lead_running:
             status = "running"
         else:
-            status = "stopped" if (w / ".started").exists() else "done"
+            status = "stopped"
         try:
             last = int(max((f.stat().st_mtime for f in w.iterdir() if f.is_file()), default=w.stat().st_mtime))
         except Exception:
@@ -311,15 +318,19 @@ def job_entry(j, now, lechonk_jobs=None):
     jd = JOBS / j["id"]
     host, live_remote = job_host(jd, lechonk_jobs)
     status = j.get("status") or "done"
-    if live_remote and status not in ("running", "waiting"):
+    if live_remote and status not in ("running", "waiting", "blocked"):
         status = "running"               # lechonk-job keeps no agent process on Sandy
     eng = read_small(jd / ".engine", 200)
     w = workers_of(jd, host, status in ("running", "waiting"))
-    return {"id": j["id"], "name": short(j["id"]), "title": (j.get("title") or "")[:140], "status": status,
-            "reason": j.get("reason") or "", "host": host, "engine": engine_badge(eng or j.get("model"), j.get("engine")),
+    live = [x for x in w if x["status"] in ("running", "failed")]
+    fin = sorted((x for x in w if x not in live), key=lambda x: -(x["last_activity"] or 0))
+    w = live + fin[:12]
+    return {"id": j["id"], "name": short(j["id"]), "workers_finished": len(fin), "title": T.SENSITIVE.sub("[masked]", (j.get("title") or "")[:140]), "status": status,
+            "reason": T.SENSITIVE.sub("[masked]", j.get("reason") or "")[:200], "host": host, "engine": engine_badge(eng or j.get("model"), j.get("engine")),
             "started_at": j.get("started_at"), "last_activity": j.get("last_activity"), "eta": j.get("eta"),
             "subagents": j.get("subagents") or 0, "files": sorted((j.get("files") or {}).keys()),
-            "board": j.get("board"), "cost": j.get("cost"), "workers": w,
+            "board": {"url": (j.get("board") or {}).get("url")} if (j.get("board") or {}).get("url") else None,
+            "gpu_today_usd": (j.get("cost") or {}).get("today_usd"), "workers": w,
             "parent": ((j.get("parent") or {}).get("job") or (j.get("parent") or {}).get("name")) if (j.get("parent") or {}).get("kind") == "job" else None}
 
 def visible(job, now):
@@ -329,24 +340,46 @@ def visible(job, now):
         return now - (job["last_activity"] or 0) < 2 * DAY
     return now - (job["last_activity"] or 0) < DAY
 
+def needs_summary(nf):
+    items = (nf or {}).get("items") or []
+    return {"count": len(items), "first": T.SENSITIVE.sub("[masked]", str(items[0].get("text", ""))[:160]) if items else ""}
+
+def safe(fn, fallback):
+    try:
+        return fn()
+    except Exception:
+        return fallback
+
 # --- main ---------------------------------------------------------------------------------------
 _CACHE = {"t": 0, "data": None}
 _LOCK = threading.Lock()
 
-def collect_orgmap(crons=None, max_age=15):
-    with _LOCK:
-        if _CACHE["data"] and time.time() - _CACHE["t"] < max_age:
-            return _CACHE["data"]
-        data = _collect(crons)
-        _CACHE.update(t=time.time(), data=data)
-        return data
+_REFRESHING = threading.Event()
+
+def _refresh(crons_fn):
+    try:
+        with _LOCK:
+            data = _collect(crons_fn() if crons_fn else None)
+            _CACHE.update(t=time.time(), data=data)
+    finally:
+        _REFRESHING.clear()
+
+def collect_orgmap(crons_fn=None, max_age=20):
+    """Serve the last measurement at once and refresh it in the background when it is older than max_age."""
+    if _CACHE["data"] is None:
+        _REFRESHING.set()
+        _refresh(crons_fn)
+    elif time.time() - _CACHE["t"] > max_age and not _REFRESHING.is_set():
+        _REFRESHING.set()
+        threading.Thread(target=_refresh, args=(crons_fn,), daemon=True).start()
+    return _CACHE["data"]
 
 def _collect(crons):
     now = time.time()
     tv = T.collect_topics(crons)
-    lc = lechonk_state()
-    prod = prod_apps()
-    units = sandy_units()
+    lc = safe(lechonk_state, {"reachable": False, "units": {}, "job_units": set(), "load": None, "cpus": None, "disk_pct": None})
+    prod = safe(prod_apps, {"reachable": False, "apps": []})
+    units = safe(sandy_units, {})
     all_units = list(units.values()) + list(lc["units"].values())
     by_host = {"sandy": units, "lechonk": lc["units"]}
 
@@ -461,5 +494,5 @@ def _collect(crons):
                  "apps_failed": sum(1 for a in prod["apps"] if a["state"] == "failed")},
     }
     return {"generated_at": int(now), "hosts": hosts, "cos": cos, "guards": guards, "teams": teams,
-            "jobs": shown, "needs_florian": tv.get("needs_florian"), "board_url": tv.get("board_url"),
+            "jobs": shown, "needs_florian": needs_summary(tv.get("needs_florian")), "board_url": tv.get("board_url"),
             "engines_running": tv.get("engines_running")}

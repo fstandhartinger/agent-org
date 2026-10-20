@@ -108,7 +108,7 @@ class H(BaseHTTPRequestHandler):
             if not authorised(self):
                 return self._send(401, json.dumps({"error": "token required"}))
             try:
-                return self._send(200, json.dumps(O.collect_orgmap(C.cron_jobs()), ensure_ascii=False))
+                return self._send(200, json.dumps(O.collect_orgmap(C.cron_jobs), ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)[:300]}))
         if path == "/api/topics":

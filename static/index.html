@@ -533,7 +533,7 @@ let OM=null, OMTIMER=null;
 const OOPEN=new Set(), OSHOW=new Set();
 const HOSTN={sandy:"Sandy",lechonk:"LeChonk",prod:"sandy-prod",laptop:"laptop"};
 const ENGN={opus:"Opus",sonnet:"Sonnet",fable:"Fable",haiku:"Haiku",claude:"Claude",codex:"Codex",devin:"Devin",opencode:"OpenCode",script:"script"};
-const STN={running:"running",waiting:"waiting",blocked:"blocked",failed:"failed",done:"done",stopped:"ended",ok:"scheduled · ok"};
+const STN={running:"running",waiting:"waiting for a reply",blocked:"blocked",failed:"failed",done:"done",stopped:"ended without a result / off",ok:"scheduled · last run ok"};
 async function loadOrg(){
   try{const r=await fetch("/api/orgmap",{headers:{"X-Org-Token":TOKEN}});
     if(r.status===401)throw new Error("401");
@@ -550,8 +550,8 @@ function oToggle(id){OOPEN.has(id)?OOPEN.delete(id):OOPEN.add(id);renderOrg()}
 function oShow(k){OSHOW.has(k)?OSHOW.delete(k):OSHOW.add(k);renderOrg()}
 function hostCard(k,h){
   if(!h)return"";
-  const dk=h.disk_pct==null?"":`<span class="${h.disk_pct>=90?"bad":h.disk_pct>=80?"warn":""}">disk <b>${h.disk_pct}%</b></span>`;
-  const ld=h.load==null?"":`<span class="${h.cpus&&h.load>h.cpus*1.5?"warn":""}">load <b>${h.load}</b>/${h.cpus} cpu</span>`;
+  const dk=h.disk_pct==null?"":`<span class="${h.disk_pct>=90?"bad":h.disk_pct>=80?"warn":""}">disk <b>${h.disk_pct}%</b>${h.disk_pct>=90?" full!":h.disk_pct>=80?" almost full":""}</span>`;
+  const ld=h.load==null?"":`<span class="${h.cpus&&h.load>h.cpus*1.5?"warn":""}">load <b>${h.load}</b>/${h.cpus} cpu${h.cpus&&h.load>h.cpus*1.5?" · very busy":""}</span>`;
   const body=k==="prod"?`<span><b>${h.apps}</b> live apps</span>${h.apps_failed?`<span class="bad"><b>${h.apps_failed}</b> down</span>`:`<span>all up</span>`}`
     :`<span><b>${h.jobs_running}</b> jobs running</span><span><b>${h.units}</b> services/timers</span>${ld}${dk}`;
   return `<div class="hostc h-${k}">${""}<div class="hn">${sd(h.reachable?"running":"failed",h.reachable?"reachable":"unreachable")}${esc(h.label)} <small>${esc(h.role)}</small></div>
@@ -567,7 +567,7 @@ function legend(){
 function jobAgo(j){if(["running","waiting"].includes(j.status)&&j.started_at)return "since "+ago(j.started_at).replace(" ago","");return ago(j.last_activity)}
 function workerRows(j){
   const ws=j.workers||[];if(!ws.length)return"";
-  const act=ws.filter(w=>w.status==="running"||w.status==="failed"), rest=ws.length-act.length;
+  const act=ws.filter(w=>w.status==="running"||w.status==="failed"), rest=j.workers_finished||0;
   const key="w:"+j.id, all=OSHOW.has(key), list=all?ws:act;
   let h=list.map(w=>`<div class="ow">${sd(w.status)}<span class="wn">${esc(w.slice)}</span>${eb(w.engine)}${hb(w.host)}<span class="ago">${esc(ago(w.last_activity))}</span></div>`).join("");
   if(rest&&!all)h+=`<div class="ow"><button class="omore" onclick="oShow('${esc(key)}')">+${rest} finished worker${rest>1?"s":""}</button></div>`;
@@ -577,9 +577,9 @@ function workerRows(j){
 function jobDetailO(j){
   const files=(j.files||[]).filter(f=>["RESULT.md","OUTPUT.md","PROMPT.md","STATUS.md"].includes(f));
   return `<div class="ojd"><div class="ttl">${esc(j.title||j.id)}</div>
-    <div>${esc(STN[j.status]||j.status)}${j.reason?" — "+esc(j.reason):""} · ${esc(HOSTN[j.host])} · last activity ${esc(ago(j.last_activity))}${j.subagents?` · ${j.subagents} subagents`:""}${j.cost&&j.cost.today_usd?` · GPU $${(+j.cost.today_usd).toFixed(2)} today`:""}</div>
+    <div>${esc(STN[j.status]||j.status)}${j.reason?" — "+esc(j.reason):""} · ${esc(HOSTN[j.host])} · last activity ${esc(ago(j.last_activity))}${j.subagents?` · ${j.subagents} subagents`:""}${j.gpu_today_usd?` · GPU $${(+j.gpu_today_usd).toFixed(2)} today`:""}</div>
     <div class="links">${files.map(f=>`<button onclick="viewFile('${esc(j.id)}','${esc(f)}')">${esc(f)}</button>`).join("")}
-    ${j.board&&j.board.url?`<a href="${esc(j.board.url)}" target="_blank" rel="noopener">board ↗</a>`:""}<code style="align-self:center">${esc(j.id)}</code></div></div>`;
+    ${j.board&&/^https:\/\//.test(j.board.url||"")?`<a href="${esc(j.board.url)}" target="_blank" rel="noopener">board ↗</a>`:""}<code style="align-self:center">${esc(j.id)}</code></div></div>`;
 }
 function jobRowO(j){
   const subs=(j.subjobs||[]).map(id=>OM.jobs[id]).filter(Boolean);
@@ -611,7 +611,7 @@ function teamCard(t){
   let body=active.map(jobRowO).join("");
   if(done.length)body+=OSHOW.has(dk)?done.map(jobRowO).join("")+`<button class="otoggle" onclick="oShow('${dk}')">▾ hide finished</button>`
     :`<button class="otoggle" onclick="oShow('${dk}')">▸ ${done.length} finished in the last 24 h</button>`;
-  const st=t.standing.length?`<div class="osec"><span class="lbl">Standing automation · ${t.standing.length}</span>${chips(t.standing,"s:"+t.key,6)}</div>`:"";
+  const st=t.standing.length?`<div class="osec"><span class="lbl">Always-on helpers (services and timers) · ${t.standing.length}</span>${chips(t.standing,"s:"+t.key,6)}</div>`:"";
   const ap=t.apps.length?`<div class="osec"><span class="lbl">Live on ${hb("prod")} · ${t.apps.length} app${t.apps.length>1?"s":""}</span>${chips(t.apps,"a:"+t.key,8)}</div>`:"";
   return `<section class="team ${cls}"><div class="th"><span class="ti">${t.icon}</span><div style="min-width:0">
     <h3>${esc(t.title)}</h3><div class="td">${esc(t.desc)}</div><div class="tc">${pills}</div></div></div>${body}${st}${ap}</section>`;
@@ -625,14 +625,14 @@ function cosNode(){
     const k="d:cos";
     staff=`<div style="margin:8px -14px -9px">${act.map(jobRowO).join("")}${jobs.length-act.length?(OSHOW.has(k)?jobs.filter(j=>!act.includes(j)).map(jobRowO).join("")+`<button class="otoggle" onclick="oShow('${k}')">▾ hide</button>`:
       `<button class="otoggle" onclick="oShow('${k}')">▸ ${jobs.length-act.length} deputy runs and board answers in the last 24 h</button>`):""}
-      ${office.standing.length?`<div class="osec"><span class="lbl">Office automation · ${office.standing.length}</span>${chips(office.standing,"s:cos",8)}</div>`:""}</div>`}
+      ${office.standing.length?`<div class="osec"><span class="lbl">Always-on helpers · ${office.standing.length}</span>${chips(office.standing,"s:cos",8)}</div>`:""}</div>`}
   return `<div class="node cos"><div class="nt"><span style="font-size:20px">🧭</span><h3>Chief of staff</h3>
     <span class="sub">runs the teams for Florian · deputies by day and night</span></div><div class="members">${mem}</div>${staff}</div>`;
 }
 function bandNode(){
   const gs=(OM.guards||[]).filter(g=>g.items.length);
   const fails=gs.reduce((a,g)=>a+g.items.filter(i=>i.state==="failed").length,0);
-  return `<div class="band"><div class="bt"><h3>⇆ Cross-cutting functions</h3><span>serve and watch every team · ${fails?`<b style="color:var(--red)">${fails} need attention</b>`:"all quiet"}</span></div>
+  return `<div class="band"><div class="bt"><h3>⇆ Cross-cutting functions</h3><span>safety nets that serve and watch every team · ${fails?`<b style="color:var(--red)">${fails} need attention</b>`:"all quiet"}</span></div>
     <div class="bgroups">${gs.map(g=>{const bad=g.items.filter(i=>i.state==="failed").length;
       return `<div class="bg"><h4>${g.icon} ${esc(g.title)}<span class="cnt">${bad?`<span style="color:var(--red)">${bad} failed</span>`:g.items.length}</span></h4>
       ${g.items.map(i=>`<div class="gi ${esc(i.state)}" title="${esc(i.name)}: ${esc(i.what)} · ${esc(STN[i.state]||i.state)}${i.failed&&i.failed.length?" · failed: "+esc(i.failed.join(", ")):""}">${sd(i.state)}<span class="gn">${esc(i.name)}</span>${i.hosts.map(hs).join("")}</div>`).join("")}</div>`}).join("")}</div></div>`;
@@ -651,16 +651,15 @@ function renderOrg(){
   const el=document.getElementById("org");
   if(!OM){el.innerHTML=`<div class="empty">Loading…</div>`;return}
   const H=OM.hosts||{};
-  const nf=(OM.needs_florian&&OM.needs_florian.items)||[];
-  const need=nf.length?`<div class="oneed">🧑 <b>Needs you: ${nf.length} open item${nf.length>1?"s":""}</b> <span style="color:var(--soft)">${esc(nf[0].text||"").slice(0,120)}</span><a onclick="setView('topics')">open list →</a></div>`:"";
+  const nf=OM.needs_florian||{count:0};
+  const need=nf.count?`<div class="oneed">🧑 <b>Needs you: ${nf.count} open item${nf.count>1?"s":""}</b> <span style="color:var(--soft)">${esc(nf.first||"")}</span><a onclick="setView('topics')">open list →</a></div>`:"";
   const teams=(OM.teams||[]).filter(t=>t.key!=="cos");
-  const rank=t=>t.key==="other"?-1e9:(t.counts.running+t.counts.waiting)*100+(t.counts.failed+t.counts.blocked)*50+t.counts.workers_running*10+t.jobs.length*.01;
-  teams.sort((a,b)=>rank(b)-rank(a));
+  // fixed order (the server's catalogue), so cards never jump while you read them
   el.innerHTML=`<div class="hosts">${["sandy","lechonk","prod"].map(k=>hostCard(k,H[k])).join("")}</div>${legend()}${need}
     <div class="tree0"><div class="node boss">👤 Florian <small>owner · decides money, security, public posts</small></div><div class="vline"></div>
     ${cosNode()}<div class="vline"></div>${bandNode()}<div class="tbus"></div><div class="teams">${teams.map(teamCard).join("")}</div></div>
     <div class="foot">Measured live: jobs and workers from <code>~/jobs</code> and the process table, servers from systemd on Sandy and LeChonk,
-      apps from Coolify on sandy-prod. Team and guard grouping are naming rules in <code>lib/orgmap.py</code>. Click a job for its files. Names only, no secrets. Generated ${hm(OM.generated_at)}.</div>`;
+      apps from Coolify on sandy-prod. Team and guard grouping are naming rules in <code>lib/orgmap.py</code>. Click a job for its title, status and files. Names and states only — no prompts, keys or secrets. Generated ${hm(OM.generated_at)}.</div>`;
   const run=Object.values(OM.jobs).filter(j=>j.status==="running").length;
   document.getElementById("tstamp").textContent=`${run} jobs running · updated ${hm(OM.generated_at)}`;
   requestAnimationFrame(orgBus);
