@@ -10,6 +10,16 @@ processes of Claude, codex, opencode and Hermes.
 would have been wrong within a day.
 
 ## Views
+- **Org** (default, since 20 Oct 2026) — the organisation in one picture: Florian →
+  chief of staff (deputies, Hermes) → a band of cross-cutting functions (security
+  guards, watchdogs, messages/Telegram, coordination, backups) → the teams (SN92/REAX,
+  JevBench/BH, Decision Models, Wallet/Finance, Marketing/X, Products, Infra). Each team
+  shows its lead jobs with their Fusion workers (`<job>/workers/<slice>/`), its always-on
+  services/timers and its live apps on sandy-prod. Colour = state, badges = host
+  (Sandy / LeChonk / sandy-prod) and engine (Opus / Sonnet / Codex / Devin / OpenCode).
+  Built by `lib/orgmap.py` (team and guard catalogues are the only hand-written rules),
+  served at `/api/orgmap`; LeChonk via one cached ssh call, sandy-prod via
+  `~/bin/sandy-prod-docker ps` (read-only, cached 5 min). Names and states only.
 - **Topics** (default, since 24 Sep 2026) — every running and recent job under
   `~/jobs`, grouped by topic (JevBench, ImageJevBench, Harold & X, Benchmark Heaven
   site, agent infrastructure, Sandy ops, training, products). Each topic shows its
