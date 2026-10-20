@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark light">
-<title>Agents · by topic</title>
+<title>Agents · org</title>
 <style>
 :root{--bg:#0d1015;--panel:#151a22;--panel2:#1a2029;--line:#262e3a;--ink:#e7ebf1;--mut:#8b94a5;--soft:#aeb6c4;
  --moss:#4fd08a;--amber:#f2a93b;--violet:#a88bfa;--blue:#5aa9e6;--red:#f06a6a;--teal:#38c7c7;
@@ -184,6 +184,101 @@ input[type=text],input[type=password],input.masked{flex:1;min-width:140px;font:i
  .card.sub{margin-left:11px}.node{font-size:12.5px}
  .grid{gap:10px}
 }
+/* org view (Oct 2026): Florian -> chief of staff -> cross-cutting band -> teams */
+:root{--sandy:#38c7c7;--lechonk:#c08bfa;--prod:#f08a5a;--laptop:#9aa3b2;--opus:#e8905a;--sonnet:#e6b85c;--fable:#f07aa8;--haiku:#9fd36a}
+[data-theme=light]{--sandy:#0f8f8f;--lechonk:#7c4bd0;--prod:#c4531f;--laptop:#667085;--opus:#c2622b;--sonnet:#9a6b00;--fable:#c0306b;--haiku:#4f8a1f}
+#org{--gap:12px}
+.hosts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}
+@media(max-width:760px){.hosts{grid-template-columns:1fr}}
+.hostc{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--hc);border-radius:11px;padding:8px 12px;min-width:0}
+.hostc .hn{display:flex;align-items:center;gap:7px;font-weight:700;font-size:14px}
+.hostc .hn small{font-weight:500;color:var(--mut);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hostc .hm{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--soft);margin-top:3px}
+.hostc .hm b{color:var(--ink)}
+.hostc .warn{color:var(--amber)}.hostc .bad{color:var(--red)}
+.legend{display:flex;gap:6px 14px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--mut);margin:0 0 12px}
+.legend .lg{display:inline-flex;gap:5px;align-items:center}
+.ohb{font-size:10px;font-weight:700;letter-spacing:.2px;padding:0 5px;border-radius:5px;line-height:16px;flex:none;
+ color:var(--hc);background:color-mix(in srgb,var(--hc) 14%,transparent);border:1px solid color-mix(in srgb,var(--hc) 45%,transparent)}
+.h-sandy{--hc:var(--sandy)}.h-lechonk{--hc:var(--lechonk)}.h-prod{--hc:var(--prod)}.h-laptop{--hc:var(--laptop)}
+.oeng{font-size:10px;font-weight:700;letter-spacing:.2px;padding:0 5px;border-radius:5px;line-height:16px;flex:none;color:#fff;background:var(--ec)}
+[data-theme=dark] .oeng{color:#11151b}
+.e-opus{--ec:var(--opus)}.e-sonnet{--ec:var(--sonnet)}.e-fable{--ec:var(--fable)}.e-haiku{--ec:var(--haiku)}.e-claude{--ec:var(--claude)}
+.e-codex{--ec:var(--codex)}.e-devin{--ec:var(--devin)}.e-opencode{--ec:var(--opencode)}.e-script,.e-none{--ec:var(--script)}
+.tree0{display:flex;flex-direction:column;align-items:center}
+.vline{width:2px;height:16px;background:var(--line)}
+.node{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:9px 14px;text-align:center}
+.node.boss{display:inline-flex;gap:8px;align-items:center;font-weight:700;font-size:15px;padding:7px 18px;border-radius:30px}
+.node.boss small{font-weight:500;color:var(--mut);font-size:12px}
+.node.cos{width:min(860px,100%);border-top:4px solid var(--violet);text-align:left}
+.node .nt{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.node .nt h3{margin:0;font-size:15px}
+.node .nt .sub{color:var(--mut);font-size:12px}
+.members{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.mem{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:3px 9px}
+.mem i{font-style:normal;color:var(--mut);font-size:11.5px}
+.sd{width:8px;height:8px;border-radius:50%;flex:none;background:var(--mut)}
+.sd.running{background:var(--moss);box-shadow:0 0 0 3px rgba(79,208,138,.2)}
+.sd.waiting,.sd.blocked{background:var(--amber);box-shadow:0 0 0 3px rgba(242,169,59,.2)}
+.sd.failed{background:var(--red);box-shadow:0 0 0 3px rgba(240,106,106,.25)}
+.sd.done{background:var(--blue);opacity:.6}
+.sd.ok{background:var(--moss);opacity:.55}
+.sd.stopped{background:transparent;border:1.5px solid var(--mut)}
+.band{width:100%;border:1px dashed color-mix(in srgb,var(--teal) 55%,var(--line));border-radius:14px;padding:9px 12px 11px;
+ background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--teal) 6%,var(--panel)) 0 10px,var(--panel) 10px 20px)}
+.band>.bt{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:7px}
+.band>.bt h3{margin:0;font-size:14px}
+.band>.bt span{color:var(--mut);font-size:12px}
+.bgroups{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+@media(max-width:1100px){.bgroups{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.bgroups{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:330px){.bgroups{grid-template-columns:1fr}}
+.bg{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 9px;min-width:0}
+.bg h4{margin:0 0 4px;font-size:12.5px;display:flex;gap:6px;align-items:center}
+.bg h4 .cnt{margin-left:auto;font-weight:500;color:var(--mut);font-size:11px}
+.gi{display:flex;gap:6px;align-items:center;font-size:12px;padding:2px 0;min-width:0;cursor:default}
+.gi .gn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.gi.failed .gn{color:var(--red);font-weight:600}.gi.stopped .gn{color:var(--mut);text-decoration:line-through}
+.gi .ohb{font-size:9px;line-height:14px;padding:0 4px}
+.tbus{width:100%;position:relative;height:18px}
+.tbus::before{content:"";position:absolute;left:50%;top:0;width:2px;height:9px;background:var(--line)}
+.tbus::after{content:"";position:absolute;left:calc(var(--bl,0px));right:calc(var(--br,0px));top:9px;height:2px;background:var(--line)}
+.teams{width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:18px var(--gap);align-items:start}
+@media(max-width:720px){.teams{grid-template-columns:minmax(0,1fr)}}
+.team{min-width:0}.ojr .jn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mem b{white-space:nowrap}
+@media(max-width:560px){.node.boss small{display:none}.mem i{display:none}.hostc .hn small{display:none}}
+.gi .ohb.s{min-width:15px;text-align:center}
+.team{position:relative;background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--tc,var(--line));border-radius:14px;box-shadow:var(--shadow)}
+.team.firstrow::before{content:"";position:absolute;left:50%;top:-14px;width:2px;height:10px;background:var(--line)}
+.team.t-run{--tc:var(--moss)}.team.t-wait{--tc:var(--amber)}.team.t-bad{--tc:var(--red)}.team.t-idle{--tc:var(--line)}
+.team .th{padding:9px 12px 7px;display:flex;gap:8px;align-items:flex-start}
+.team .ti{font-size:22px;line-height:1}
+.team h3{margin:0;font-size:15px;line-height:1.25}
+.team .td{color:var(--mut);font-size:11.5px;margin-top:1px}
+.team .tc{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.cnt2{font-size:11px;border-radius:20px;padding:0 7px;border:1px solid currentColor;white-space:nowrap}
+.cnt2.run{color:var(--moss)}.cnt2.wait{color:var(--amber)}.cnt2.bad{color:var(--red)}.cnt2.mut{color:var(--mut);border-color:var(--line)}
+.oj{border-top:1px solid var(--line)}
+.ojr{display:flex;align-items:center;gap:6px;padding:6px 12px;cursor:pointer;min-height:34px}
+.ojr:hover{background:var(--panel2)}
+.ojr .jn{font-size:13px;flex:1;min-width:0}
+.ojr .ago{color:var(--mut);font-size:11px;white-space:nowrap}
+.ow{display:flex;align-items:center;gap:6px;padding:2px 12px 2px 30px;font-size:12px;color:var(--soft);position:relative;min-height:24px}
+.ow::before{content:"";position:absolute;left:16px;top:0;bottom:50%;width:9px;border-left:1.5px solid var(--line);border-bottom:1.5px solid var(--line);border-bottom-left-radius:5px}
+.ow .wn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ow.sub .wn{font-weight:600;color:var(--ink)}
+.ojd{padding:3px 12px 10px 27px;font-size:12px;color:var(--soft)}
+.ojd .ttl{color:var(--ink);margin-bottom:4px}
+.osec{border-top:1px solid var(--line);padding:6px 12px 8px;display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.osec .lbl{color:var(--mut);font-size:11px;margin-right:3px;width:100%}
+.ochip{display:inline-flex;gap:4px;align-items:center;font-size:11px;padding:1px 6px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);color:var(--soft);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.ochip.failed{color:var(--red);border-color:currentColor}
+.ochip .sd{width:6px;height:6px}
+.omore{border:0;background:transparent;color:var(--blue);font-size:11.5px;padding:2px 4px}
+.otoggle{display:block;width:100%;text-align:left;border:0;border-top:1px solid var(--line);border-radius:0;background:transparent;color:var(--mut);font-size:12px;padding:6px 12px}
+.oneed{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--needbg);border:1px solid var(--needline);border-radius:11px;padding:7px 12px;margin-bottom:10px;font-size:13px}
+.oneed a{cursor:pointer}
 </style></head><body>
 <div id="gate" hidden>
   <h1>Agents</h1>
@@ -204,12 +299,13 @@ input[type=text],input[type=password],input.masked{flex:1;min-width:140px;font:i
 <div id="app" hidden>
 <header><div class="hin">
   <div class="hrow">
-    <h1>Agents <small>by topic</small></h1>
+    <h1>Agents <small>on Sandy · LeChonk · sandy-prod</small></h1>
     <span class="live"><span class="dot" id="dot"></span><span id="livetxt">connecting…</span></span>
     <span class="sp"></span>
     <div class="seg" role="tablist">
+      <button id="t-org" onclick="setView('org')">Org</button>
       <button id="t-topics" onclick="setView('topics')">Topics</button>
-      <button id="t-chart" onclick="setView('chart')">Org chart</button>
+      <button id="t-chart" onclick="setView('chart')">Classic</button>
       <button id="t-list" onclick="setView('list')">List</button>
     </div>
     <button class="icon" id="themeBtn" onclick="toggleTheme()" title="Dark / light" aria-label="Toggle dark or light mode">◐</button>
@@ -225,7 +321,8 @@ input[type=text],input[type=password],input.masked{flex:1;min-width:140px;font:i
   </div>
 </div></header>
 <main>
-  <div id="topics"></div>
+  <div id="org"></div>
+  <div id="topics" hidden></div>
   <div id="out" hidden></div><div id="chart" hidden></div>
 </main>
 <div id="viewer" hidden onclick="if(event.target===this)closeViewer()">
@@ -431,10 +528,149 @@ function inScopeNoEng(j){const e=ENGF;ENGF="";const r=inScope(j);ENGF=e;return r
 function inScopeNoPar(j){const p=PARF;PARF="";const r=inScope(j);PARF=p;return r}
 </script>
 <script>
+// Org view: who works for whom, on which server, with which engine — understandable in ten seconds.
+let OM=null, OMTIMER=null;
+const OOPEN=new Set(), OSHOW=new Set();
+const HOSTN={sandy:"Sandy",lechonk:"LeChonk",prod:"sandy-prod",laptop:"laptop"};
+const ENGN={opus:"Opus",sonnet:"Sonnet",fable:"Fable",haiku:"Haiku",claude:"Claude",codex:"Codex",devin:"Devin",opencode:"OpenCode",script:"script"};
+const STN={running:"running",waiting:"waiting",blocked:"blocked",failed:"failed",done:"done",stopped:"ended",ok:"scheduled · ok"};
+async function loadOrg(){
+  try{const r=await fetch("/api/orgmap",{headers:{"X-Org-Token":TOKEN}});
+    if(r.status===401)throw new Error("401");
+    if(!r.ok)throw new Error("http "+r.status);
+    OM=await r.json();gateOff();setLive(RT,RT?"live · every 15 s":"paused");render()}
+  catch(e){if(String(e.message)==="401")gateOn();else setLive(false,"offline — retrying")}
+}
+function hb(h){return h?`<span class="ohb h-${esc(h)}" title="runs on ${esc(HOSTN[h]||h)}">${esc(HOSTN[h]||h)}</span>`:""}
+function hs(h){return `<span class="ohb s h-${esc(h)}" title="runs on ${esc(HOSTN[h]||h)}">${esc((HOSTN[h]||h)[0].toUpperCase())}</span>`}
+function eb(e){if(!e||!e.key)return"";const d=e.detail?"·"+e.detail:"";
+  return `<span class="oeng e-${esc(e.key)}" title="engine${e.account?" · Claude account "+esc(e.account):""}">${esc((ENGN[e.key]||e.key)+d)}</span>`}
+function sd(s,title){return `<span class="sd ${esc(s)}" title="${esc(title||STN[s]||s)}"></span>`}
+function oToggle(id){OOPEN.has(id)?OOPEN.delete(id):OOPEN.add(id);renderOrg()}
+function oShow(k){OSHOW.has(k)?OSHOW.delete(k):OSHOW.add(k);renderOrg()}
+function hostCard(k,h){
+  if(!h)return"";
+  const dk=h.disk_pct==null?"":`<span class="${h.disk_pct>=90?"bad":h.disk_pct>=80?"warn":""}">disk <b>${h.disk_pct}%</b></span>`;
+  const ld=h.load==null?"":`<span class="${h.cpus&&h.load>h.cpus*1.5?"warn":""}">load <b>${h.load}</b>/${h.cpus} cpu</span>`;
+  const body=k==="prod"?`<span><b>${h.apps}</b> live apps</span>${h.apps_failed?`<span class="bad"><b>${h.apps_failed}</b> down</span>`:`<span>all up</span>`}`
+    :`<span><b>${h.jobs_running}</b> jobs running</span><span><b>${h.units}</b> services/timers</span>${ld}${dk}`;
+  return `<div class="hostc h-${k}">${""}<div class="hn">${sd(h.reachable?"running":"failed",h.reachable?"reachable":"unreachable")}${esc(h.label)} <small>${esc(h.role)}</small></div>
+    <div class="hm">${h.reachable?body:`<span class="bad">not reachable from Sandy right now</span>`}</div></div>`;
+}
+function legend(){
+  return `<div class="legend"><span class="lg">${sd("running")}running</span><span class="lg">${sd("waiting")}waiting / blocked</span>
+    <span class="lg">${sd("failed")}failed</span><span class="lg">${sd("done")}done</span><span class="lg">${sd("ok")}timer · ok</span>
+    <span class="lg">${sd("stopped")}off</span><span style="width:6px"></span>
+    <span class="lg">${hb("sandy")}${hb("lechonk")}${hb("prod")} server (S / L / P in the band)</span>
+    <span class="lg">${["opus","sonnet","codex","devin","opencode"].map(k=>eb({key:k})).join(" ")} engine</span></div>`;
+}
+function jobAgo(j){if(["running","waiting"].includes(j.status)&&j.started_at)return "since "+ago(j.started_at).replace(" ago","");return ago(j.last_activity)}
+function workerRows(j){
+  const ws=j.workers||[];if(!ws.length)return"";
+  const act=ws.filter(w=>w.status==="running"||w.status==="failed"), rest=ws.length-act.length;
+  const key="w:"+j.id, all=OSHOW.has(key), list=all?ws:act;
+  let h=list.map(w=>`<div class="ow">${sd(w.status)}<span class="wn">${esc(w.slice)}</span>${eb(w.engine)}${hb(w.host)}<span class="ago">${esc(ago(w.last_activity))}</span></div>`).join("");
+  if(rest&&!all)h+=`<div class="ow"><button class="omore" onclick="oShow('${esc(key)}')">+${rest} finished worker${rest>1?"s":""}</button></div>`;
+  else if(all&&rest)h+=`<div class="ow"><button class="omore" onclick="oShow('${esc(key)}')">hide finished workers</button></div>`;
+  return h;
+}
+function jobDetailO(j){
+  const files=(j.files||[]).filter(f=>["RESULT.md","OUTPUT.md","PROMPT.md","STATUS.md"].includes(f));
+  return `<div class="ojd"><div class="ttl">${esc(j.title||j.id)}</div>
+    <div>${esc(STN[j.status]||j.status)}${j.reason?" — "+esc(j.reason):""} · ${esc(HOSTN[j.host])} · last activity ${esc(ago(j.last_activity))}${j.subagents?` · ${j.subagents} subagents`:""}${j.cost&&j.cost.today_usd?` · GPU $${(+j.cost.today_usd).toFixed(2)} today`:""}</div>
+    <div class="links">${files.map(f=>`<button onclick="viewFile('${esc(j.id)}','${esc(f)}')">${esc(f)}</button>`).join("")}
+    ${j.board&&j.board.url?`<a href="${esc(j.board.url)}" target="_blank" rel="noopener">board ↗</a>`:""}<code style="align-self:center">${esc(j.id)}</code></div></div>`;
+}
+function jobRowO(j){
+  const subs=(j.subjobs||[]).map(id=>OM.jobs[id]).filter(Boolean);
+  return `<div class="oj"><div class="ojr" onclick="oToggle('${esc(j.id)}')">${sd(j.status,(STN[j.status]||j.status)+(j.reason?" — "+j.reason:""))}
+    <span class="jn" title="${esc(j.title||j.id)}">${esc(j.name)}</span>${eb(j.engine)}${hb(j.host)}<span class="ago">${esc(jobAgo(j))}</span></div>
+    ${OOPEN.has(j.id)?jobDetailO(j):""}${workerRows(j)}
+    ${subs.map(s=>`<div class="ow sub" onclick="oToggle('${esc(s.id)}')" style="cursor:pointer">${sd(s.status)}<span class="wn">${esc(s.name)}</span>${eb(s.engine)}${hb(s.host)}<span class="ago">${esc(jobAgo(s))}</span></div>${OOPEN.has(s.id)?jobDetailO(s):""}`).join("")}</div>`;
+}
+function chips(list,key,limit){
+  const bad=list.filter(x=>x.state==="failed"), ok=list.filter(x=>x.state!=="failed");
+  const all=OSHOW.has(key), shown=all?list:bad.concat(ok.slice(0,Math.max(0,limit-bad.length)));
+  const more=list.length-shown.length;
+  return shown.map(x=>`<span class="ochip ${x.state==="failed"?"failed":""}" title="${esc(x.name)} · ${esc(x.kind||"app")} · ${esc(STN[x.state]||x.state)} · ${esc(HOSTN[x.host]||x.host)}">${sd(x.state)}${esc(x.name)}${x.host&&x.host!=="sandy"&&x.host!=="prod"?" "+hb(x.host):""}</span>`).join("")+
+    (more>0?`<button class="omore" onclick="oShow('${esc(key)}')">+${more} more</button>`:all&&list.length>limit?`<button class="omore" onclick="oShow('${esc(key)}')">less</button>`:"");
+}
+function teamCard(t){
+  const c=t.counts, jobs=t.jobs.map(id=>OM.jobs[id]).filter(j=>j&&!j.child);
+  const active=jobs.filter(j=>["running","waiting","blocked","failed"].includes(j.status)), done=jobs.filter(j=>!active.includes(j));
+  const sfail=t.standing.filter(s=>s.state==="failed").length, afail=t.apps.filter(a=>a.state==="failed").length;
+  const cls=c.failed||c.blocked||afail?"t-bad":c.running?"t-run":c.waiting?"t-wait":"t-idle";
+  const pills=[c.running?`<span class="cnt2 run">● ${c.running} running</span>`:"",
+    c.workers_running?`<span class="cnt2 run">${c.workers_running} worker${c.workers_running>1?"s":""}</span>`:"",
+    c.waiting+c.blocked?`<span class="cnt2 wait">${c.waiting+c.blocked} waiting</span>`:"",
+    c.failed?`<span class="cnt2 bad">${c.failed} failed</span>`:"",
+    sfail?`<span class="cnt2 bad">${sfail} unit${sfail>1?"s":""} failed</span>`:"",
+    afail?`<span class="cnt2 bad">${afail} app${afail>1?"s":""} down</span>`:"",
+    !c.running&&!c.waiting&&!c.failed?`<span class="cnt2 mut">no job running</span>`:""].join("");
+  const dk="d:"+t.key;
+  let body=active.map(jobRowO).join("");
+  if(done.length)body+=OSHOW.has(dk)?done.map(jobRowO).join("")+`<button class="otoggle" onclick="oShow('${dk}')">▾ hide finished</button>`
+    :`<button class="otoggle" onclick="oShow('${dk}')">▸ ${done.length} finished in the last 24 h</button>`;
+  const st=t.standing.length?`<div class="osec"><span class="lbl">Standing automation · ${t.standing.length}</span>${chips(t.standing,"s:"+t.key,6)}</div>`:"";
+  const ap=t.apps.length?`<div class="osec"><span class="lbl">Live on ${hb("prod")} · ${t.apps.length} app${t.apps.length>1?"s":""}</span>${chips(t.apps,"a:"+t.key,8)}</div>`:"";
+  return `<section class="team ${cls}"><div class="th"><span class="ti">${t.icon}</span><div style="min-width:0">
+    <h3>${esc(t.title)}</h3><div class="td">${esc(t.desc)}</div><div class="tc">${pills}</div></div></div>${body}${st}${ap}</section>`;
+}
+function cosNode(){
+  const office=(OM.teams||[]).find(t=>t.key==="cos");
+  const mem=(OM.cos||[]).map(m=>`<span class="mem">${sd(m.state)}<b>${esc(m.name)}</b><i>${esc(m.role)}</i>${(m.hosts||[]).map(hb).join("")}</span>`).join("");
+  let staff="";
+  if(office){const jobs=office.jobs.map(id=>OM.jobs[id]).filter(Boolean);
+    const act=jobs.filter(j=>["running","waiting","blocked","failed"].includes(j.status));
+    const k="d:cos";
+    staff=`<div style="margin:8px -14px -9px">${act.map(jobRowO).join("")}${jobs.length-act.length?(OSHOW.has(k)?jobs.filter(j=>!act.includes(j)).map(jobRowO).join("")+`<button class="otoggle" onclick="oShow('${k}')">▾ hide</button>`:
+      `<button class="otoggle" onclick="oShow('${k}')">▸ ${jobs.length-act.length} deputy runs and board answers in the last 24 h</button>`):""}
+      ${office.standing.length?`<div class="osec"><span class="lbl">Office automation · ${office.standing.length}</span>${chips(office.standing,"s:cos",8)}</div>`:""}</div>`}
+  return `<div class="node cos"><div class="nt"><span style="font-size:20px">🧭</span><h3>Chief of staff</h3>
+    <span class="sub">runs the teams for Florian · deputies by day and night</span></div><div class="members">${mem}</div>${staff}</div>`;
+}
+function bandNode(){
+  const gs=(OM.guards||[]).filter(g=>g.items.length);
+  const fails=gs.reduce((a,g)=>a+g.items.filter(i=>i.state==="failed").length,0);
+  return `<div class="band"><div class="bt"><h3>⇆ Cross-cutting functions</h3><span>serve and watch every team · ${fails?`<b style="color:var(--red)">${fails} need attention</b>`:"all quiet"}</span></div>
+    <div class="bgroups">${gs.map(g=>{const bad=g.items.filter(i=>i.state==="failed").length;
+      return `<div class="bg"><h4>${g.icon} ${esc(g.title)}<span class="cnt">${bad?`<span style="color:var(--red)">${bad} failed</span>`:g.items.length}</span></h4>
+      ${g.items.map(i=>`<div class="gi ${esc(i.state)}" title="${esc(i.name)}: ${esc(i.what)} · ${esc(STN[i.state]||i.state)}${i.failed&&i.failed.length?" · failed: "+esc(i.failed.join(", ")):""}">${sd(i.state)}<span class="gn">${esc(i.name)}</span>${i.hosts.map(hs).join("")}</div>`).join("")}</div>`}).join("")}</div></div>`;
+}
+function orgBus(){
+  const el=document.getElementById("org");const cards=[...el.querySelectorAll(".team")];if(!cards.length)return;
+  const top=cards[0].offsetTop, first=cards.filter(c=>Math.abs(c.offsetTop-top)<4);
+  cards.forEach(c=>c.classList.toggle("firstrow",first.includes(c)));
+  const bus=el.querySelector(".tbus"), wrap=el.querySelector(".teams");if(!bus||!wrap)return;
+  const W=wrap.clientWidth, a=first[0], b=first[first.length-1];
+  bus.style.setProperty("--bl",(a.offsetLeft+a.offsetWidth/2-wrap.offsetLeft)+"px");
+  bus.style.setProperty("--br",(W-(b.offsetLeft+b.offsetWidth/2-wrap.offsetLeft))+"px");
+}
+addEventListener("resize",()=>{try{if(VIEW==="org")orgBus()}catch(e){}});
+function renderOrg(){
+  const el=document.getElementById("org");
+  if(!OM){el.innerHTML=`<div class="empty">Loading…</div>`;return}
+  const H=OM.hosts||{};
+  const nf=(OM.needs_florian&&OM.needs_florian.items)||[];
+  const need=nf.length?`<div class="oneed">🧑 <b>Needs you: ${nf.length} open item${nf.length>1?"s":""}</b> <span style="color:var(--soft)">${esc(nf[0].text||"").slice(0,120)}</span><a onclick="setView('topics')">open list →</a></div>`:"";
+  const teams=(OM.teams||[]).filter(t=>t.key!=="cos");
+  const rank=t=>t.key==="other"?-1e9:(t.counts.running+t.counts.waiting)*100+(t.counts.failed+t.counts.blocked)*50+t.counts.workers_running*10+t.jobs.length*.01;
+  teams.sort((a,b)=>rank(b)-rank(a));
+  el.innerHTML=`<div class="hosts">${["sandy","lechonk","prod"].map(k=>hostCard(k,H[k])).join("")}</div>${legend()}${need}
+    <div class="tree0"><div class="node boss">👤 Florian <small>owner · decides money, security, public posts</small></div><div class="vline"></div>
+    ${cosNode()}<div class="vline"></div>${bandNode()}<div class="tbus"></div><div class="teams">${teams.map(teamCard).join("")}</div></div>
+    <div class="foot">Measured live: jobs and workers from <code>~/jobs</code> and the process table, servers from systemd on Sandy and LeChonk,
+      apps from Coolify on sandy-prod. Team and guard grouping are naming rules in <code>lib/orgmap.py</code>. Click a job for its files. Names only, no secrets. Generated ${hm(OM.generated_at)}.</div>`;
+  const run=Object.values(OM.jobs).filter(j=>j.status==="running").length;
+  document.getElementById("tstamp").textContent=`${run} jobs running · updated ${hm(OM.generated_at)}`;
+  requestAnimationFrame(orgBus);
+}
+</script>
+<script>
 
 const DEPTS=["Leadership","Production","Distribution","Research","Security","Operations","Unassigned"];
 let TOKEN=localStorage.getItem("orgtok")||"", DATA=null, ES=null;
-let VIEW=localStorage.getItem("orgview2")||"topics";
+let VIEW=localStorage.getItem("orgview3")||"org";
 let HOSTS=localStorage.getItem("orghosts")==="1";
 let TERM=null, TERMTIMER=null;
 let SUBS=localStorage.getItem("orgsubs")==="1";
@@ -451,11 +687,12 @@ function dur(s){if(s==null)return"?";const d=~~(s/86400),h=~~(s%86400/3600),m=~~
   t.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();saveTok();}});})();
 function saveTok(){TOKEN=document.getElementById("tok").value.trim();
   localStorage.setItem("orgtok",TOKEN);connect()}
-function setView(v){const prev=VIEW;VIEW=v;localStorage.setItem("orgview2",v);
-  for(const k of ["topics","list","chart"])document.getElementById("t-"+k).classList.toggle("on",v===k);
-  document.getElementById("classicCtrls").hidden=(v==="topics");
-  document.getElementById("topicCtrls").hidden=(v!=="topics");
-  if((prev==="topics")!==(v==="topics")||!DATA&&!TV)connect();else render()}
+const POLLED=new Set(["org","topics"]);
+function setView(v){const prev=VIEW;VIEW=v;localStorage.setItem("orgview3",v);
+  for(const k of ["org","topics","list","chart"])document.getElementById("t-"+k).classList.toggle("on",v===k);
+  document.getElementById("classicCtrls").hidden=POLLED.has(v);
+  document.getElementById("topicCtrls").hidden=!POLLED.has(v);
+  if(prev!==v&&(POLLED.has(prev)||POLLED.has(v))||!DATA&&!TV&&!OM)connect();else render()}
 function toggleSubs(){SUBS=!SUBS;localStorage.setItem("orgsubs",SUBS?"1":"0");
   document.getElementById("t-sub").classList.toggle("on",SUBS);
   document.getElementById("t-sub").textContent=SUBS?"Hide subagents":"Show subagents";render()}
@@ -513,6 +750,7 @@ function setLive(on,txt){document.getElementById("dot").classList.toggle("on",on
 function connect(){
   if(ES){ES.close();ES=null}
   if(TVTIMER){clearInterval(TVTIMER);TVTIMER=null}
+  if(VIEW==="org"){loadOrg();if(RT)TVTIMER=setInterval(loadOrg,15000);return}
   if(VIEW==="topics"){loadTopics();if(RT)TVTIMER=setInterval(loadTopics,15000);return}
   if(!RT){pollOnce();return}
   ES=new EventSource("/api/stream?t="+encodeURIComponent(TOKEN));
@@ -709,7 +947,9 @@ function busify(){
 }
 addEventListener("resize",()=>{if(VIEW==="chart")busify()});
 function render(){
+  document.getElementById("org").hidden=(VIEW!=="org");
   document.getElementById("topics").hidden=(VIEW!=="topics");
+  if(VIEW==="org"){document.getElementById("out").hidden=true;document.getElementById("chart").hidden=true;renderOrg();return}
   if(VIEW==="topics"){document.getElementById("out").hidden=true;document.getElementById("chart").hidden=true;renderTopics();return}
   if(!DATA)return;
   document.getElementById("out").hidden=(VIEW!=="list");

@@ -16,6 +16,7 @@ from urllib.parse import urlparse, parse_qs
 sys.path.insert(0, str(Path(__file__).parent / "lib"))
 import collect as C
 import topics as T
+import orgmap as O
 
 JOB_FILES = {"OUTPUT.md", "RESULT.md", "PROMPT.md", "STATUS.md", "BOARD-INBOX.md"}
 
@@ -101,6 +102,13 @@ class H(BaseHTTPRequestHandler):
                 return self._send(401, json.dumps({"error": "token required"}))
             try:
                 return self._send(200, json.dumps(full_state(), ensure_ascii=False))
+            except Exception as e:
+                return self._send(500, json.dumps({"error": str(e)[:300]}))
+        if path == "/api/orgmap":
+            if not authorised(self):
+                return self._send(401, json.dumps({"error": "token required"}))
+            try:
+                return self._send(200, json.dumps(O.collect_orgmap(C.cron_jobs()), ensure_ascii=False))
             except Exception as e:
                 return self._send(500, json.dumps({"error": str(e)[:300]}))
         if path == "/api/topics":
