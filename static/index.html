@@ -279,6 +279,8 @@ input[type=text],input[type=password],input.masked{flex:1;min-width:140px;font:i
 .otoggle{display:block;width:100%;text-align:left;border:0;border-top:1px solid var(--line);border-radius:0;background:transparent;color:var(--mut);font-size:12px;padding:6px 12px}
 .oneed{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--needbg);border:1px solid var(--needline);border-radius:11px;padding:7px 12px;margin-bottom:10px;font-size:13px}
 .oneed a{cursor:pointer}
+</style><style>.aid-host{position:relative}.aid{position:absolute;top:5px;right:8px;z-index:5;font:11px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace!important;letter-spacing:0!important;text-transform:none!important;color:inherit;opacity:.55;cursor:pointer;user-select:none;white-space:nowrap}.aid:hover,.aid:focus-visible{opacity:1}.aid:focus-visible{outline:1px solid currentColor;outline-offset:2px}.aid-region{padding-top:24px}.aid-header{padding-top:18px}
+header .hin,#org,#topics,#out,#chart,#viewer .box,#term{padding-top:24px}
 </style></head><body>
 <div id="gate" hidden>
   <h1>Agents</h1>
@@ -976,4 +978,35 @@ document.getElementById("t-rt").textContent="Live: "+(RT?"on":"off");
 document.getElementById("t-rt").classList.toggle("on",RT);
 document.getElementById("t-host").classList.toggle("on",HOSTS);
 applyTheme();setView(VIEW);
+</script><script>(() => {
+  const targets = [["header .hin", "02a6d6"], ["#org", "0d8387"], ["#topics", "fcf359"], ["#out", "f9af3c"], ["#chart", "1f2533"], ["#viewer .box", "44b6fc"], ["#term", "9e287e"]];
+  function mount() {
+    for (const [selector, id] of targets) for (const host of document.querySelectorAll(selector)) {
+      if (getComputedStyle(host).position === 'static') host.classList.add('aid-host');
+      if ([...host.children].some(el => el.dataset.aid === id)) continue;
+      const badge = document.createElement('span');
+      badge.className = 'aid'; badge.dataset.aid = id; badge.textContent = 'a#' + id;
+      badge.title = 'Artefakt-ID – klicken zum Kopieren'; badge.tabIndex = 0; badge.setAttribute('role', 'button');
+      badge.setAttribute('aria-label', 'Artefakt-ID a#' + id + ' kopieren'); host.append(badge);
+    }
+  }
+  async function copy(event) {
+    const badge = event.target.closest?.('.aid');
+    if (!badge || (event.type === 'keydown' && !['Enter', ' '].includes(event.key))) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    try {
+      const value = 'a#' + badge.dataset.aid;
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(value);
+      else {
+        const input = document.createElement('textarea'); input.value = value;
+        input.style.position = 'fixed'; input.style.opacity = '0'; document.body.append(input);
+        input.select(); const copied = document.execCommand('copy'); input.remove();
+        if (!copied) throw new Error('clipboard unavailable'); badge.focus();
+      }
+      badge.title = 'Kopiert';
+    } catch { badge.title = 'Kopieren nicht möglich'; }
+  }
+  document.addEventListener('click', copy, true); document.addEventListener('keydown', copy, true);
+  mount(); new MutationObserver(mount).observe(document.body, {childList:true, subtree:true});
+})();
 </script></body></html>
