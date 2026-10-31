@@ -1,0 +1,132 @@
+{
+  "surface": "app:agent-org",
+  "items": {
+    "app": {
+      "id": "02a6d6",
+      "kind": "app",
+      "title": "Agentenorganisation",
+      "summary": "Zeigt die gemessene Organisation der Agenten und Dienste. Die Ansichten ordnen laufende Arbeit nach Teams, Themen oder Prozessen.",
+      "parent": null,
+      "url": "https://agents.app.mintapis.com",
+      "selector": "header .hin",
+      "refs": [
+        {
+          "kind": "code",
+          "target": "github:fstandhartinger/agent-org@HEAD:static/index.html#L302",
+          "label": "UI-Quelltext"
+        }
+      ],
+      "links": [],
+      "access": "internal"
+    },
+    "org": {
+      "id": "0d8387",
+      "kind": "panel",
+      "title": "Organisationsansicht",
+      "summary": "Ordnet Teams, Leitungen und Dienste in einem Organigramm. Farben und Statusanzeigen zeigen den gemessenen Zustand.",
+      "parent": "02a6d6",
+      "url": "https://agents.app.mintapis.com",
+      "selector": "#org",
+      "refs": [
+        {
+          "kind": "code",
+          "target": "github:fstandhartinger/agent-org@HEAD:static/index.html#L326",
+          "label": "UI-Quelltext"
+        }
+      ],
+      "links": [],
+      "access": "internal"
+    },
+    "topics": {
+      "id": "fcf359",
+      "kind": "panel",
+      "title": "Arbeit nach Themen",
+      "summary": "Gruppiert laufende und kürzlich bearbeitete Aufgaben nach Themen. Filter und Status helfen beim Eingrenzen der Arbeit.",
+      "parent": "02a6d6",
+      "url": "https://agents.app.mintapis.com",
+      "selector": "#topics",
+      "refs": [
+        {
+          "kind": "code",
+          "target": "github:fstandhartinger/agent-org@HEAD:static/index.html#L327",
+          "label": "UI-Quelltext"
+        }
+      ],
+      "links": [],
+      "access": "internal"
+    },
+    "list": {
+      "id": "f9af3c",
+      "kind": "panel",
+      "title": "Agentenliste",
+      "summary": "Listet Agenten nach Abteilungen mit ihren Unteragenten. Status und Laufzeit beschreiben die gemessene Aktivität.",
+      "parent": "02a6d6",
+      "url": "https://agents.app.mintapis.com",
+      "selector": "#out",
+      "refs": [
+        {
+          "kind": "code",
+          "target": "github:fstandhartinger/agent-org@HEAD:static/index.html#L328",
+          "label": "UI-Quelltext"
+        }
+      ],
+      "links": [],
+      "access": "internal"
+    },
+    "chart": {
+      "id": "1f2533",
+      "kind": "panel",
+      "title": "Klassisches Organigramm",
+      "summary": "Zeigt die klassische Baumansicht der Abteilungen und Agenten. Verbindungen stellen die organisatorische Zuordnung dar.",
+      "parent": "02a6d6",
+      "url": "https://agents.app.mintapis.com",
+      "selector": "#chart",
+      "refs": [
+        {
+          "kind": "code",
+          "target": "github:fstandhartinger/agent-org@HEAD:static/index.html#L328",
+          "label": "UI-Quelltext"
+        }
+      ],
+      "links": [],
+      "access": "internal"
+    },
+    "files": {
+      "id": "44b6fc",
+      "kind": "panel",
+      "title": "Aufgabendateien",
+      "summary": "Zeigt eine ausgewählte Datei einer Aufgabe. Der Dateiname im Kopf erklärt den angezeigten Inhalt.",
+      "parent": "02a6d6",
+      "url": "https://agents.app.mintapis.com",
+      "selector": "#viewer .box",
+      "refs": [
+        {
+          "kind": "code",
+          "target": "github:fstandhartinger/agent-org@HEAD:static/index.html#L330",
+          "label": "UI-Quelltext"
+        }
+      ],
+      "links": [],
+      "access": "internal"
+    },
+    "terminal": {
+      "id": "9e287e",
+      "kind": "panel",
+      "title": "Agentensitzung",
+      "summary": "Zeigt die Ausgabe einer ausgewählten Agentensitzung. Über das Eingabefeld lassen sich Nachrichten an diese Sitzung senden.",
+      "parent": "02a6d6",
+      "url": "https://agents.app.mintapis.com",
+      "selector": "#term",
+      "refs": [
+        {
+          "kind": "code",
+          "target": "github:fstandhartinger/agent-org@HEAD:static/index.html#L334",
+          "label": "UI-Quelltext"
+        }
+      ],
+      "links": [],
+      "access": "internal"
+    }
+  },
+  "sync_source": "artifacts.manifest.json"
+}
